@@ -11,6 +11,7 @@
 #include <algorithm>
 #include <fstream>
 #include <cstring>
+#include <functional>
 
 namespace edgevdb {
 
@@ -144,8 +145,7 @@ inline bool RelationIndex::save(const std::string& path) const {
 
     for (const auto& [name, edges] : relation_edges_) {
         for (const auto& [from_id, to_id] : edges) {
-            RelationEdge edge;
-            std::memset(&edge, 0, sizeof(edge));
+            RelationEdge edge{};
             std::strncpy(edge.relation_name, name.c_str(), 63);
             edge.from_id = from_id;
             edge.to_id = to_id;

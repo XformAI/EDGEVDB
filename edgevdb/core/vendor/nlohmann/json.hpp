@@ -39,18 +39,19 @@ private:
     object_t object_val_;
     array_t array_val_;
     std::string string_val_;
-    double number_val_ = 0.0;
     int64_t int_val_ = 0;
     uint64_t uint_val_ = 0;
+    double number_val_ = 0.0;
     bool bool_val_ = false;
 
 public:
     json() : type_(value_t::null) {}
     json(std::nullptr_t) : type_(value_t::null) {}
     json(bool v) : type_(value_t::boolean), bool_val_(v) {}
-    json(int v) : type_(value_t::number_integer), int_val_(v), number_val_(v) {}
-    json(int64_t v) : type_(value_t::number_integer), int_val_(v), number_val_(static_cast<double>(v)) {}
-    json(uint64_t v) : type_(value_t::number_unsigned), uint_val_(v), number_val_(static_cast<double>(v)) {}
+    json(int v) : type_(value_t::number_integer), int_val_(v), uint_val_(0), number_val_(v) {}
+    json(int64_t v) : type_(value_t::number_integer), int_val_(v), uint_val_(0), number_val_(static_cast<double>(v)) {}
+    json(uint64_t v) : type_(value_t::number_unsigned), int_val_(0), uint_val_(v), number_val_(static_cast<double>(v)) {}
+    json(uint32_t v) : type_(value_t::number_unsigned), int_val_(0), uint_val_(v), number_val_(static_cast<double>(v)) {}
     json(double v) : type_(value_t::number_float), number_val_(v) {}
     json(const char* v) : type_(value_t::string), string_val_(v) {}
     json(const std::string& v) : type_(value_t::string), string_val_(v) {}
@@ -153,6 +154,8 @@ public:
             return string_val_;
         } else if constexpr (std::is_same_v<T, int>) {
             return static_cast<int>(int_val_);
+        } else if constexpr (std::is_same_v<T, uint32_t>) {
+            return static_cast<uint32_t>(uint_val_);
         } else if constexpr (std::is_same_v<T, int64_t>) {
             return int_val_;
         } else if constexpr (std::is_same_v<T, uint64_t>) {

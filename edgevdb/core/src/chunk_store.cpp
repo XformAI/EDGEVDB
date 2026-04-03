@@ -62,7 +62,6 @@ bool ChunkStore::open() {
     // Compute CRC32 over all chunk data
     std::vector<uint8_t> all_data;
     all_data.resize(count * sizeof(ChunkNode));
-    size_t offset = 0;
     // Re-read chunk data for CRC verification
     file.seekg(8 + 4 + 8); // skip header
     file.read(reinterpret_cast<char*>(all_data.data()), count * sizeof(ChunkNode));

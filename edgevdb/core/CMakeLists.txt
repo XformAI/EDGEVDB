@@ -77,6 +77,24 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     target_compile_options(edgevdb_shared PRIVATE -Wall -Wextra -Wno-unused-parameter)
 endif()
 
+# Platform-specific for shared library
+if(ANDROID)
+    target_link_libraries(edgevdb_shared PUBLIC ${LOG_LIB} ${ANDROID_LIB})
+    target_compile_definitions(edgevdb_shared PUBLIC EDGEVDB_ANDROID)
+endif()
+
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64|arm64|ARM64")
+    target_compile_definitions(edgevdb_shared PUBLIC EDGEVDB_ARM64)
+endif()
+
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|AMD64|x86")
+    if(EDGEVDB_ENABLE_SSE2)
+        if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+            target_compile_options(edgevdb_shared PRIVATE -msse2)
+        endif()
+    endif()
+endif()
+
 # Install rules
 install(TARGETS edgevdb_core edgevdb_shared
     ARCHIVE DESTINATION lib

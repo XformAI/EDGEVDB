@@ -14,5 +14,6 @@ option(EDGEVDB_ENABLE_SYNC "Build sync engine" ON)
 add_subdirectory(core)
 
 if(EDGEVDB_BUILD_TESTS AND NOT ANDROID)
+  enable_testing()
   add_subdirectory(tests)
 endif()

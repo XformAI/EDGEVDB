@@ -120,7 +120,6 @@ std::vector<int> WordPieceTokenizer::wordPieceTokenize(const std::string& word) 
 
     // WordPiece segmentation
     size_t start = 0;
-    bool failed = false;
 
     while (start < word.size()) {
         size_t end = word.size();
