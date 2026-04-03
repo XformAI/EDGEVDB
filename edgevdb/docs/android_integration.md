@@ -80,14 +80,27 @@ db.close()
 ## ViewModel Example
 
 ```kotlin
+import ai.edgevdb.EdgeVDB
+import ai.edgevdb.Embedder
+import ai.edgevdb.ChunkResult
+
 class RAGViewModel(application: Application) : AndroidViewModel(application) {
     private val db = EdgeVDB.open(application)
     private val embedder = Embedder.fromAssets(application)
 
     fun ingest(text: String, docId: Int) {
-        val chunks = text.chunked(512)
-        chunks.forEachIndexed { page, chunk ->
+        // Split on word boundaries — 400 words per chunk, 50-word overlap
+        val words = text.split("\\s+".toRegex())
+        val chunkSize = 400
+        val overlap = 50
+        var page = 0
+        var i = 0
+        while (i < words.size) {
+            val chunk = words.subList(i, minOf(i + chunkSize, words.size)).joinToString(" ")
+            if (chunk.length < 20) break  // skip trivially small final fragments
             db.insertText(embedder, chunk, docId, page)
+            page++
+            i += chunkSize - overlap
         }
         db.save()
     }

@@ -26,8 +26,12 @@ chmod +x build-xcframework.sh
 
 ### Option C: CocoaPods
 ```ruby
+# Podfile
+platform :ios, '15.0'
 pod 'EdgeVDB', '~> 1.0'
 ```
+
+> See [DEVELOPER_GUIDE.md](../DEVELOPER_GUIDE.md) §10.4 for the full podspec with C++17 and Swift subspecs.
 
 ## Usage — Without ONNX (Pre-computed Embeddings)
 

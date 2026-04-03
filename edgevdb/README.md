@@ -57,6 +57,7 @@ with EdgeVDB("./data") as db:
     results = db.query_vector(query_emb, query_text="image classification", top_k=5)
     for r in results:
         print(f"  [{r.score:.3f}] {r.text}")
+    results.free()  # Always free native query handle
 ```
 
 #### Android (Kotlin)
@@ -68,6 +69,26 @@ val chunkId = db.insertChunk(embedding, "Neural networks classify images", docId
 db.queryVector(embedding, "image classification", topK = 5).use { results ->
     results.toList().forEach { println("${it.score}: ${it.text}") }
 }
+db.close()
+```
+
+#### iOS (Swift)
+```swift
+let docsDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+let storageDir = docsDir.appendingPathComponent("edgevdb").path
+
+let db = try EdgeVDB(storageDir: storageDir)
+let embedding: [Float] = yourProvider.embed("Neural networks classify images")
+let chunkId = try db.insertChunk(text: "Neural networks classify images",
+                                 embedding: embedding, docId: 1, page: 0)
+
+let results = try db.queryVector(embedding: embedding, queryText: "image classification", topK: 5)
+defer { results.close() }
+for r in results.toArray() {
+    print("\(r.score): \(r.text)")
+}
+
+try? db.save()
 db.close()
 ```
 
@@ -125,13 +146,14 @@ cmake --build build/android-arm64
 
 See [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md) for full build instructions, integration guides, and publishing workflows.
 
-## Performance
+## Performance Targets
 
-| Metric | Measured | Platform |
+| Metric | Target | Platform |
 |---|---|---|
 | Query latency (10k chunks) | < 100ms | Desktop |
-| Index build throughput | ~2000 chunks/sec | Desktop Release |
 | Library size (stripped) | < 4 MB | Android arm64 |
+
+> **Note:** Run `bench_query` and `bench_build` from a release build to measure actual performance on your hardware. See [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md) §9.
 
 ## Documentation
 

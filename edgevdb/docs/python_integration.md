@@ -55,6 +55,9 @@ with EdgeVDB("./data") as db:
 
     # RAG context string (pre-assembled for LLM)
     print(results.context_string)
+
+    # Free the native query handle when done
+    results.free()
 ```
 
 ## Usage — With Built-in Embedder
@@ -70,8 +73,10 @@ with EdgeVDB("./data") as db:
     results = db.query_text(embedder, "hello", top_k=5)
     for r in results:
         print(f"  [{r.score:.3f}] {r.text}")
-
     print(results.context_string)
+    results.free()  # Free native query handle
+
+    embedder.destroy()  # Free native embedder handle
 ```
 
 ## Object Store & Relations
@@ -107,6 +112,8 @@ set_log_level(2)  # 0=off, 1=error, 2=info, 3=debug
 | `db.insert_text(embedder, text, doc_id, page_number)` | Insert with auto-embedding |
 | `db.query_vector(embedding, query_text, top_k)` | Query with pre-computed embedding |
 | `db.query_text(embedder, query, top_k)` | Query with auto-embedding |
+| `results.context_string` | Pre-assembled RAG context string |
+| `results.free()` | Free native query handle — always call after use |
 | `db.put_object(type_name, properties)` | Store a JSON object |
 | `db.get_object(id)` | Retrieve object by ID |
 | `db.add_relation(name, from_id, to_id)` | Add a relation |

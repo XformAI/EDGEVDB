@@ -54,7 +54,7 @@ EdgeVDB is a cross-platform, embeddable vector database designed for on-device R
 4. Then same steps as pre-computed path (2–6 above)
 
 ### Query
-1. Query embedding provided (or auto-computed)
+1. Query text → WordPiece tokenize → ONNX inference → 384-dim embedding (via `query_text()`), or caller provides pre-computed embedding directly (via `query_vector()` — no ONNX cost)
 2. HNSW KNN search with over-fetch (3× top_k)
 3. HybridRanker re-ranks: α·cosine + β·page_proximity + γ·keyword
 4. Optional: KG expansion adds related chunks via entity graph

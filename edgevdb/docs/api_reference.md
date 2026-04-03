@@ -11,7 +11,7 @@ Fill a config struct with default values.
 Open or create a database. Returns `NULL` on failure.
 
 ### `void evdb_close(EvdbHandle* h)`
-Save and close a database handle.
+Close and free a database handle. **Call `evdb_save()` first** to ensure all data is flushed to disk. Do not rely on `evdb_close` to persist unsaved changes.
 
 ### `EvdbError evdb_save(EvdbHandle* h)`
 Flush all data to disk.
@@ -20,13 +20,13 @@ Flush all data to disk.
 
 > The embedder is optional. Use `insert_chunk()` and `query_vector()` with pre-computed embeddings to avoid any ONNX dependency.
 
-### `EvdbEmbedder* evdb_embedder_create(model_path, vocab_path, threads)`
+### `EvdbEmbedder* evdb_embedder_create(const char* model_path, const char* vocab_path, int threads)`
 Create an embedder from ONNX model and vocab files. Returns `NULL` on failure.
 
 ### `void evdb_embedder_destroy(EvdbEmbedder* e)`
 Free an embedder.
 
-### `EvdbError evdb_embed_text(EvdbEmbedder* e, text, float* out_384)`
+### `EvdbError evdb_embed_text(EvdbEmbedder* e, const char* text, float* out_384)`
 Produce a 384-dim L2-normalized embedding.
 
 ## Vector Store — Insert
@@ -82,7 +82,7 @@ Query objects by type and property filter.
 Add a typed directional relation.
 
 ### `EvdbError evdb_relation_get_targets(h, name, from_id, out_ids, &count)`
-Get target IDs for a relation from a source.
+Get target IDs for a relation from a source. `count` is an **in-out** parameter: caller sets `*count` to the buffer capacity of `out_ids`; on return, `*count` is set to the actual number of targets written.
 
 ## Sync
 
