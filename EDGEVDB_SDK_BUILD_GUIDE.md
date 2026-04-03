@@ -1599,7 +1599,7 @@ Create the Python SDK in python/edgevdb/.
      
      def insert_text(self, embedder: 'Embedder', text: str,
                      doc_id: int = 0, page_number: int = 0) -> int
-     def insert_chunk(self, embedding: list[float], text: str,
+     def insert_chunk(self, text: str, embedding: list[float],
                       doc_id: int = 0, page_number: int = 0) -> int
      def query_text(self, embedder: 'Embedder', query: str,
                     top_k: int = 5, use_kg: bool = False) -> 'QueryResults'

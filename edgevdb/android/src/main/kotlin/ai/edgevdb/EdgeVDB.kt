@@ -48,6 +48,12 @@ class EdgeVDB private constructor(private val handle: Long) {
         return QueryResults(qh)
     }
 
+    fun queryVector(queryEmbedding: FloatArray, queryTextForKeyword: String = "",
+                    topK: Int = 5): QueryResults {
+        val qh = nativeQueryVector(handle, queryEmbedding, queryTextForKeyword, topK)
+        return QueryResults(qh)
+    }
+
     // Object store
     fun putObject(typeName: String, properties: Map<String, Any>): Long {
         val json = mapToJson(properties)
@@ -131,6 +137,8 @@ class EdgeVDB private constructor(private val handle: Long) {
     private external fun nativeQueryText(handle: Long, embedderHandle: Long,
                                           queryText: String, topK: Int,
                                           useKgExpansion: Boolean): Long
+    private external fun nativeQueryVector(handle: Long, queryEmbedding: FloatArray,
+                                           queryTextForKeyword: String, topK: Int): Long
     private external fun nativeResultCount(queryHandle: Long): Int
     private external fun nativeResultText(queryHandle: Long, index: Int): String
     private external fun nativeResultScore(queryHandle: Long, index: Int): Float
