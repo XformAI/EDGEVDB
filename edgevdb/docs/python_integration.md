@@ -2,66 +2,122 @@
 
 ## Prerequisites
 - Python 3.8+
-- Built EdgeVDB shared library (`libedgevdb_shared.so` / `.dylib` / `.dll`)
+- Built EdgeVDB shared library: `.so` (Linux), `.dylib` (macOS), `.dll` (Windows)
 
 ## Building the Library
+
 ```bash
 cmake --preset desktop-release
-cmake --build --preset desktop-release
+cmake --build build/desktop-release
 ```
 
-The shared library will be in `build/desktop-release/core/`.
+Output: `build/desktop-release/core/libedgevdb_shared.so`
 
 ## Setup
+
 ```bash
-# Copy library to Python package
+# Copy shared library into the Python package
 cp build/desktop-release/core/libedgevdb_shared.so python/edgevdb/
 
-# Or set the library path
+# Install in development mode
+cd python && pip install -e .
+```
+
+Or set the library search path:
+```bash
 export LD_LIBRARY_PATH=build/desktop-release/core:$LD_LIBRARY_PATH
 ```
 
-## Usage
+## Usage — Without ONNX (Recommended)
+
+Use embeddings from **any provider** (OpenAI, Cohere, sentence-transformers, etc.):
+
+> **Note:** `insert_chunk(text, embedding, ...)` takes **text first**, then embedding — matching the C API order.
+
+```python
+from edgevdb import EdgeVDB
+
+with EdgeVDB("./data") as db:
+    # Get embedding from your preferred provider
+    embedding = your_provider.embed("Machine learning finds patterns")
+
+    # Insert: text first, then embedding
+    chunk_id = db.insert_chunk("Machine learning finds patterns", embedding,
+                               doc_id=1, page_number=0)
+
+    # Query with pre-computed embedding
+    query_emb = your_provider.embed("what is ML?")
+    results = db.query_vector(query_emb, query_text="what is ML?", top_k=5)
+
+    # Each result has .chunk_id, .text, .score, .page_number
+    for r in results:
+        print(f"  [{r.score:.3f}] {r.text}")
+
+    # RAG context string (pre-assembled for LLM)
+    print(results.context_string)
+```
+
+## Usage — With Built-in Embedder
+
 ```python
 from edgevdb import EdgeVDB, Embedder
 
-# Open database
 with EdgeVDB("./data") as db:
-    # Create embedder
     embedder = Embedder("model.onnx", "vocab.txt")
 
-    # Insert
     chunk_id = db.insert_text(embedder, "Hello world", doc_id=1, page_number=0)
-    print(f"Inserted chunk {chunk_id}")
 
-    # Query
     results = db.query_text(embedder, "hello", top_k=5)
     for r in results:
         print(f"  [{r.score:.3f}] {r.text}")
 
-    # Context string for LLM
-    context = results.context_string
-    print(f"\nRAG context:\n{context}")
+    print(results.context_string)
+```
 
-    # Object store
-    obj_id = db.put_object("Document", {"title": "Test", "author": "Alice"})
-    obj = db.get_object(obj_id)
-    print(f"Object: {obj}")
+## Object Store & Relations
+
+```python
+from edgevdb import EdgeVDB
+
+with EdgeVDB("./data") as db:
+    # Objects
+    obj_id = db.put_object("Document", {"title": "ML Guide", "author": "Alice"})
+    obj = db.get_object(obj_id)  # Returns dict or None
+    print(obj)
 
     # Relations
     db.add_relation("authored_by", obj_id, 100)
 ```
 
-## API Reference
+## Utilities
 
-### `EdgeVDB(storage_dir, **config)`
-Open or create a database.
+```python
+from edgevdb import version, set_log_level
 
-### `Embedder(model_path, vocab_path, threads=2)`
-Create an embedding model.
+print(f"EdgeVDB v{version()}")  # "1.0.0"
+set_log_level(2)  # 0=off, 1=error, 2=info, 3=debug
+```
 
-### `db.insert_text(embedder, text, doc_id, page_number)` → chunk_id
-### `db.query_text(embedder, query, top_k=5)` → QueryResults
-### `db.put_object(type_name, properties)` → object_id
-### `db.get_object(id)` → dict or None
-### `db.add_relation(name, from_id, to_id)`
+## API Summary
+
+| Method | Description |
+|--------|-------------|
+| `EdgeVDB(storage_dir)` | Open or create database |
+| `db.insert_chunk(text, embedding, doc_id, page_number)` | Insert with pre-computed embedding |
+| `db.insert_text(embedder, text, doc_id, page_number)` | Insert with auto-embedding |
+| `db.query_vector(embedding, query_text, top_k)` | Query with pre-computed embedding |
+| `db.query_text(embedder, query, top_k)` | Query with auto-embedding |
+| `db.put_object(type_name, properties)` | Store a JSON object |
+| `db.get_object(id)` | Retrieve object by ID |
+| `db.add_relation(name, from_id, to_id)` | Add a relation |
+| `db.save()` / `db.close()` | Persist / cleanup |
+| `Embedder(model_path, vocab_path)` | Create embedder |
+| `version()` / `set_log_level(level)` | Utilities |
+
+## Running Tests
+
+```bash
+cp build/desktop-debug/core/libedgevdb_shared.so python/edgevdb/
+cd python && python3 -m unittest tests.test_edgevdb -v
+# Or: cd python && pytest tests/ -v
+```

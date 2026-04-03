@@ -2,18 +2,16 @@
 
 ## Prerequisites
 - Android Studio (Arctic Fox or newer)
-- NDK r25+ (arm64-v8a)
+- NDK r25+ (tested with r27, arm64-v8a + x86_64)
 - CMake 3.22+
 
 ## Setup
 
-### 1. Add the Library
-Copy the `android/` directory into your Android project as a module, or include the AAR.
-
-### 2. Configure Gradle
+### Option A: Local Module
 ```kotlin
 // settings.gradle.kts
 include(":edgevdb")
+project(":edgevdb").projectDir = file("path/to/edgevdb/android")
 
 // app/build.gradle.kts
 dependencies {
@@ -21,19 +19,73 @@ dependencies {
 }
 ```
 
-### 3. Add Model Assets
-Place ONNX model and vocab files in `app/src/main/assets/`:
-- `model.onnx` — MiniLM-L6-v2 quantized
-- `vocab.txt` — WordPiece vocabulary
-
-### 4. Usage
+### Option B: Maven Central
 ```kotlin
-class MyViewModel(application: Application) : AndroidViewModel(application) {
+dependencies {
+    implementation("ai.edgevdb:edgevdb-android:1.0.0")
+}
+```
+
+## Usage — Without ONNX (Pre-computed Embeddings)
+
+Use embeddings from any provider (ML Kit, TFLite, OpenAI API, etc.):
+
+```kotlin
+import ai.edgevdb.EdgeVDB
+import ai.edgevdb.ChunkResult
+
+class MyRepository(context: Context) {
+    private val db = EdgeVDB.open(context)
+
+    fun index(text: String, embedding: FloatArray, docId: Int, page: Int): Long {
+        return db.insertChunk(embedding, text, docId, page)
+    }
+
+    fun search(queryEmbedding: FloatArray, query: String): List<ChunkResult> {
+        return db.queryVector(queryEmbedding, query, topK = 5).use { it.toList() }
+    }
+
+    fun storeMetadata(title: String): Long {
+        return db.putObject("Document", mapOf("title" to title))
+    }
+
+    fun cleanup() {
+        db.save()
+        db.close()
+    }
+}
+```
+
+## Usage — With Built-in Embedder
+
+Place `model.onnx` and `vocab.txt` in `app/src/main/assets/`:
+
+```kotlin
+import ai.edgevdb.EdgeVDB
+import ai.edgevdb.Embedder
+
+val embedder = Embedder.fromAssets(context)
+val db = EdgeVDB.open(context)
+
+val chunkId = db.insertText(embedder, "Neural networks classify images", docId = 1, pageNumber = 0)
+
+db.queryText(embedder, "image classification", topK = 5).use { results ->
+    results.toList().forEach { println("${it.score}: ${it.text}") }
+}
+
+embedder.destroy()
+db.close()
+```
+
+## ViewModel Example
+
+```kotlin
+class RAGViewModel(application: Application) : AndroidViewModel(application) {
     private val db = EdgeVDB.open(application)
     private val embedder = Embedder.fromAssets(application)
 
-    fun ingestDocument(text: String, docId: Int) {
-        val chunks = splitIntoChunks(text, maxLen = 512)
+    fun ingest(text: String, docId: Int) {
+        val chunks = text.chunked(512)
         chunks.forEachIndexed { page, chunk ->
             db.insertText(embedder, chunk, docId, page)
         }
@@ -41,8 +93,7 @@ class MyViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun search(query: String): List<ChunkResult> {
-        val results = db.queryText(embedder, query, topK = 5)
-        return results.toList()
+        return db.queryText(embedder, query, topK = 5).use { it.toList() }
     }
 
     override fun onCleared() {
@@ -56,3 +107,15 @@ class MyViewModel(application: Application) : AndroidViewModel(application) {
 ```
 -keep class ai.edgevdb.** { *; }
 ```
+
+## Build Presets
+
+```bash
+# ARM64 (physical devices)
+cmake --preset android-arm64 && cmake --build build/android-arm64
+
+# x86_64 (emulators)
+cmake --preset android-x86_64 && cmake --build build/android-x86_64
+```
+
+Output: `build/android-*/core/libedgevdb_shared.so` — copy to `jniLibs/`.

@@ -3,7 +3,7 @@
 > **Embeddable cross-platform vector database with HNSW ANN, hybrid retrieval, knowledge graph, relational object store, and CRDT-based sync — all in a single zero-dependency C++ library.**
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-1.0.0-green.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.0.0-green.svg)]()
 [![C++17](https://img.shields.io/badge/C%2B%2B-17-orange.svg)]()
 [![Platforms](https://img.shields.io/badge/platforms-Android%20%7C%20iOS%20%7C%20Desktop-lightgrey.svg)]()
 
@@ -14,66 +14,84 @@
 | **HNSW ANN Index** | 384-dim float32 vectors, M=16, ef=200/64 |
 | **Hybrid Retrieval** | α·cosine + β·page_proximity + γ·keyword |
 | **Knowledge Graph** | On-device NER → entity graph → multi-hop expansion |
-| **Embedding Pipeline** | WordPiece tokenizer → ONNX MiniLM → 384-dim L2-norm |
+| **Embedding Pipeline** | Optional — bring your own embeddings or use built-in |
 | **Object Store** | Schema-less NoSQL with typed property indexing |
 | **Relation Index** | Foreign key edges between objects |
 | **CRDT Sync** | LWW vector clock sync across devices |
 | **Stable C API** | `vectordb.h` — single header, ABI-stable |
 | **Platform SDKs** | Android (JNI/Kotlin), iOS (Swift), Python (ctypes) |
+| **Zero Dependencies** | ONNX Runtime is optional — core works everywhere |
 
 ## Architecture
 
 ```
-┌────────────────────────────────────────────────────────────┐
-│                       EdgeVDB SDK                          │
-│                                                            │
-│  ┌──────────────┐  ┌──────────────┐  ┌─────────────────┐  │
-│  │  Vector DB   │  │  Relational  │  │   Data Sync     │  │
-│  │  (HNSW ANN)  │  │  Object DB   │  │   Engine        │  │
-│  │  Hybrid Rank │  │  (NoSQL ORM) │  │   (CRDTs)       │  │
-│  └──────────────┘  └──────────────┘  └─────────────────┘  │
-│  ┌──────────────────────────────────────────────────────┐  │
-│  │       Embedding Pipeline (Text → Vector)             │  │
-│  │  Tokenizer → ONNX MiniLM → L2-norm 384-dim vectors  │  │
-│  └──────────────────────────────────────────────────────┘  │
-│  ┌──────────────────────────────────────────────────────┐  │
-│  │              Pure C Public API (vectordb.h)          │  │
-│  └──────────────────────────────────────────────────────┘  │
-│  ┌────────────┐  ┌────────────┐  ┌──────────────────────┐  │
-│  │ Android    │  │ iOS Swift  │  │ Python (Desktop/Pi)  │  │
-│  │ JNI/Kotlin │  │ Wrapper    │  │ ctypes harness       │  │
-│  └────────────┘  └────────────┘  └──────────────────────┘  │
-└────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────┐
+│                       EdgeVDB SDK                        │
+├──────────────┬──────────────┬──────────────┬─────────────┤
+│  Python SDK  │  Android SDK │   C API      │  iOS SDK    │
+│  (ctypes)    │  (JNI/Kotlin)│  (vectordb.h)│  (Swift)    │
+├──────────────┴──────────────┴──────────────┴─────────────┤
+│                   C++ Core Library                        │
+├──────┬──────┬──────┬──────┬──────┬──────┬──────┬─────────┤
+│ HNSW │Chunk │Object│ KG   │Hybrid│ Sync │Token │Embedder │
+│Index │Store │Store │Engine│Ranker│Engine│Budget│(opt.)   │
+└──────┴──────┴──────┴──────┴──────┴──────┴──────┴─────────┘
 ```
 
 ## Quick Start
 
-### Android (Kotlin)
+### Without ONNX — Pre-computed Embeddings (Recommended)
+
+Use embeddings from **any provider** (OpenAI, Cohere, sentence-transformers, etc.):
+
+#### Python
+```python
+from edgevdb import EdgeVDB
+
+with EdgeVDB("./data") as db:
+    embedding = your_provider.embed("Neural networks classify images")
+    chunk_id = db.insert_chunk("Neural networks classify images", embedding,
+                               doc_id=1, page_number=0)
+
+    query_emb = your_provider.embed("image classification")
+    results = db.query_vector(query_emb, query_text="image classification", top_k=5)
+    for r in results:
+        print(f"  [{r.score:.3f}] {r.text}")
+```
+
+#### Android (Kotlin)
 ```kotlin
 val db = EdgeVDB.open(context)
-val embedder = Embedder.fromAssets(context)
+val embedding: FloatArray = yourProvider.embed("Neural networks classify images")
+val chunkId = db.insertChunk(embedding, "Neural networks classify images", docId = 1, pageNumber = 0)
 
-// Insert
-db.insertText(embedder, "Neural networks are computational models...", docId = 1, pageNumber = 0)
-
-// Query
-val results = db.queryText(embedder, "What are neural networks?", topK = 5)
-println(results.contextString)
-
+db.queryVector(embedding, "image classification", topK = 5).use { results ->
+    results.toList().forEach { println("${it.score}: ${it.text}") }
+}
 db.close()
 ```
 
-### iOS (Swift)
-```swift
-let db = try EdgeVDB(storageDir: docsURL)
-let embedder = try Embedder(modelResource: "model", vocabResource: "vocab")
+#### C API
+```c
+EvdbConfig config;
+evdb_default_config(&config);
+config.storage_dir = "./data";
 
-let chunkId = try db.insertText(using: embedder, text: "...", docId: 1, pageNumber: 0)
-let results = try db.queryText(using: embedder, query: "search query", topK: 5)
-print(results.contextString)
+EvdbHandle* db = evdb_open(&config);
+
+float embedding[384] = { /* from your provider */ };
+uint64_t chunk_id;
+evdb_insert_chunk(db, "Hello world", embedding, 1, 0, &chunk_id);
+
+EvdbQueryHandle* q = evdb_query_vector(db, embedding, "hello", 5);
+printf("Top: %s (%.3f)\n", evdb_result_text(q, 0), evdb_result_score(q, 0));
+evdb_query_free(q);
+
+evdb_close(db);
 ```
 
-### Python
+### With Built-in Embedder (ONNX optional)
+
 ```python
 from edgevdb import EdgeVDB, Embedder
 
@@ -84,54 +102,42 @@ with EdgeVDB("./data") as db:
     print(results.context_string)
 ```
 
-### C API
-```c
-EvdbConfig config;
-evdb_default_config(&config);
-config.storage_dir = "./data";
-
-EvdbHandle* db = evdb_open(&config);
-EvdbEmbedder* emb = evdb_embedder_create("model.onnx", "vocab.txt", 2);
-
-uint64_t chunk_id;
-evdb_insert_text(db, emb, "Hello world", 1, 0, &chunk_id);
-
-EvdbQueryHandle* q = evdb_query_text(db, emb, "hello", 5, 0);
-printf("Top result: %s (score: %.3f)\n", evdb_result_text(q, 0), evdb_result_score(q, 0));
-evdb_query_free(q);
-
-evdb_close(db);
-evdb_embedder_destroy(emb);
-```
-
-## Performance Targets
-
-| Metric | Target | Platform |
-|---|---|---|
-| Query latency (10k chunks) | < 100ms | All |
-| Embedding per sentence | < 20ms | All |
-| Index build throughput | > 10 chunks/sec | All |
-| Library size (stripped) | < 4 MB | Android arm64 |
-
 ## Building
 
 ```bash
-# Desktop Debug
+# Desktop (Linux/macOS/WSL)
 cmake --preset desktop-debug
-cmake --build --preset desktop-debug
+cmake --build build/desktop-debug
 
-# Desktop Release
+# Desktop Release + Benchmarks
 cmake --preset desktop-release
-cmake --build --preset desktop-release
+cmake --build build/desktop-release
+
+# Android ARM64
+export ANDROID_NDK="/path/to/ndk"
+cmake --preset android-arm64
+cmake --build build/android-arm64
 
 # Run tests
-ctest --test-dir build/desktop-debug
+./build/desktop-debug/tests/test_hnsw
+./build/desktop-debug/tests/test_e2e_rag
 ```
+
+See [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md) for full build instructions, integration guides, and publishing workflows.
+
+## Performance
+
+| Metric | Measured | Platform |
+|---|---|---|
+| Query latency (10k chunks) | < 100ms | Desktop |
+| Index build throughput | ~2000 chunks/sec | Desktop Release |
+| Library size (stripped) | < 4 MB | Android arm64 |
 
 ## Documentation
 
-- [Architecture](docs/architecture.md)
-- [API Reference](docs/api_reference.md)
+- [**Developer Guide**](DEVELOPER_GUIDE.md) — Building, integration, publishing
+- [Architecture](docs/architecture.md) — System design and data flow
+- [API Reference](docs/api_reference.md) — Complete C API documentation
 - [Android Integration](docs/android_integration.md)
 - [iOS Integration](docs/ios_integration.md)
 - [Python Integration](docs/python_integration.md)

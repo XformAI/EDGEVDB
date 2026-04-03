@@ -2,7 +2,9 @@
 
 ## System Overview
 
-EdgeVDB is a cross-platform, embeddable vector database designed for on-device RAG (Retrieval-Augmented Generation). It combines HNSW approximate nearest neighbor search with a hybrid re-ranking pipeline, knowledge graph expansion, and a relational object store.
+EdgeVDB is a cross-platform, embeddable vector database designed for on-device RAG (Retrieval-Augmented Generation). It combines HNSW approximate nearest neighbor search with a hybrid re-ranking pipeline, knowledge graph expansion, and a relational object store — all with zero required dependencies.
+
+**ONNX Runtime is optional.** The core vector DB works with pre-computed embeddings from any provider.
 
 ## Component Architecture
 
@@ -29,25 +31,30 @@ EdgeVDB is a cross-platform, embeddable vector database designed for on-device R
 │  └──────────────┘  └──────────────┘  └──────────────────────┘   │
 │                                                                  │
 │  ┌──────────────────────────────────────────────────────────┐    │
-│  │  Embedding Pipeline: WordPiece Tokenizer → ONNX MiniLM  │    │
+│  │  Embedder (optional): WordPiece Tokenizer → ONNX MiniLM │    │
+│  │  Or: use pre-computed embeddings via insert_chunk()      │    │
 │  └──────────────────────────────────────────────────────────┘    │
 └──────────────────────────────────────────────────────────────────┘
 ```
 
 ## Data Flow
 
-### Insert
+### Insert (with pre-computed embedding)
+1. Caller provides text + 384-dim float32 embedding
+2. ChunkStore.put() → assigns ID and timestamp
+3. HNSWIndex.insert() → builds graph connections
+4. PageIndex.insert() → maps chunk to doc/page
+5. KGExtractor.extract() → NER entities
+6. KnowledgeGraph.addChunkEntities() → entity-chunk mapping
+
+### Insert (with auto-embedding)
 1. Text → WordPiece tokenizer → token IDs
 2. Token IDs → ONNX Runtime inference → 384-dim float32 embedding
 3. L2 normalize embedding
-4. ChunkStore.put() → assigns ID and timestamp
-5. HNSWIndex.insert() → builds graph connections
-6. PageIndex.insert() → maps chunk to doc/page
-7. KGExtractor.extract() → NER entities
-8. KnowledgeGraph.addChunkEntities() → entity-chunk mapping
+4. Then same steps as pre-computed path (2–6 above)
 
 ### Query
-1. Query text → embed (same pipeline as insert)
+1. Query embedding provided (or auto-computed)
 2. HNSW KNN search with over-fetch (3× top_k)
 3. HybridRanker re-ranks: α·cosine + β·page_proximity + γ·keyword
 4. Optional: KG expansion adds related chunks via entity graph
@@ -75,6 +82,6 @@ All stores use `std::shared_mutex` for readers-writer locking:
 | Platform | Integration | Language |
 |----------|-------------|----------|
 | Android | JNI shared library | Kotlin |
-| iOS | Static framework | Swift |
-| Desktop | Shared library | Python (ctypes) |
+| iOS | XCFramework / SPM | Swift |
+| Desktop | Shared library | Python (ctypes), C/C++ |
 | Embedded | Static library | C/C++ |
