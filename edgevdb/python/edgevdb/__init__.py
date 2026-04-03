@@ -230,9 +230,13 @@ class QueryResults:
     def to_list(self) -> List[ChunkResult]:
         return list(self)
 
-    def __del__(self):
-        if self._handle:
+    def free(self):
+        if hasattr(self, '_handle') and self._handle:
             self._lib.evdb_query_free(self._handle)
+            self._handle = None
+
+    def __del__(self):
+        self.free()
 
 
 class Embedder:
