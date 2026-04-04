@@ -4,7 +4,20 @@ import sys, os, shutil, hashlib, math
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "python"))
 from edgevdb import EdgeVDB
 
+try:
+    from edgevdb import Embedder
+    model_path = os.path.join(os.path.dirname(__file__), "models", "model.onnx")
+    vocab_path = os.path.join(os.path.dirname(__file__), "models", "vocab.txt")
+    if os.path.exists(model_path) and os.path.exists(vocab_path):
+        real_embedder = Embedder(model_path, vocab_path)
+    else:
+        real_embedder = None
+except Exception:
+    real_embedder = None
+
 def embed(text):
+    if real_embedder:
+        return real_embedder.embed(text)
     dim, vec = 384, [0.0]*384
     words = text.lower().split()
     for wi, w in enumerate(words):
@@ -17,11 +30,6 @@ def embed(text):
         vec = [v/norm for v in vec]
     return vec
 
-def cosim(a, b):
-    d = sum(x*y for x, y in zip(a, b))
-    na, nb = math.sqrt(sum(x*x for x in a)), math.sqrt(sum(x*x for x in b))
-    return d / (na * nb) if na > 1e-8 and nb > 1e-8 else 0
-
 # Setup
 db_path = "/tmp/edgevdb_demo"
 shutil.rmtree(db_path, ignore_errors=True)
@@ -32,7 +40,11 @@ print("  EdgeVDB Vector Database Demo")
 print("=" * 60)
 
 db = EdgeVDB(db_path)
-print(f"\n[OK] Database opened at {db_path}\n")
+print(f"\n[OK] Database opened at {db_path}")
+if real_embedder:
+    print("[OK] Real ONNX Embedder loaded\n")
+else:
+    print("[WARN] Using pseudo-random character hash (ONNX not found). Semantics will be nonsense!\n")
 
 # Insert documents
 texts = [
@@ -63,10 +75,17 @@ for q in queries:
     qe = embed(q)
     print(f"  Query: \"{q}\"")
     print(f"  Embedding: [{qe[0]:.4f}, {qe[1]:.4f}, ...]")
-    results = sorted([(cosim(qe, e), cid, t) for cid, (t, e) in store.items()], reverse=True)
-    for rank, (score, cid, txt) in enumerate(results[:3]):
-        bar = "#" * int(score * 30)
-        print(f"    #{rank+1} [{bar:30s}] {score:.4f}  \"{txt}\"")
+    
+    if real_embedder:
+        results = db.query_text(real_embedder, q, top_k=3)
+    else:
+        results = db.query_vector(qe, query_text=q, top_k=3)
+
+    for rank, r in enumerate(results):
+        bar_len = min(30, max(0, int(r.score * 30)))
+        bar = "#" * bar_len
+        print(f"    #{rank+1} [{bar:30s}] {r.score:.4f}  \"{r.text}\"")
+    results.free()
     print()
 
 # Object store

@@ -16,32 +16,38 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "python"))
 
 from edgevdb import EdgeVDB
 
-# ─── Simple Embedding Generator (no ONNX needed) ─────────────────────
+# ─── Embedding Setup ──────────────────────────────────────────────────
+try:
+    from edgevdb import Embedder
+    model_path = os.path.join(os.path.dirname(__file__), "models", "model.onnx")
+    vocab_path = os.path.join(os.path.dirname(__file__), "models", "vocab.txt")
+    if os.path.exists(model_path) and os.path.exists(vocab_path):
+        real_embedder = Embedder(model_path, vocab_path)
+    else:
+        real_embedder = None
+except Exception:
+    real_embedder = None
+
 def text_to_embedding(text: str) -> list:
-    """Generate a deterministic 384-dim embedding from text using character hashing.
-    Similar texts produce similar vectors — good enough for demo purposes."""
+    """Generate embedding using real ONNX model if available, else deterministic hash."""
+    if real_embedder:
+        return real_embedder.embed(text)
+    
+    # Fallback pseudo-random hashing for demo if ONNX not found
     dim = 384
     vec = [0.0] * dim
     words = text.lower().split()
     for wi, word in enumerate(words):
         h = int(hashlib.sha256(word.encode()).hexdigest(), 16)
         for d in range(dim):
-            # Spread word contribution across dimensions
             seed = h ^ (d * 2654435761) ^ (wi * 40503)
             val = ((seed & 0xFFFF) - 32768) / 32768.0
             vec[d] += val / max(len(words), 1)
-    # L2 normalize
     norm = math.sqrt(sum(v*v for v in vec))
     if norm > 1e-8:
         vec = [v / norm for v in vec]
     return vec
 
-# ─── Cosine Similarity ───────────────────────────────────────────────
-def cosine_sim(a, b):
-    dot = sum(x*y for x, y in zip(a, b))
-    na = math.sqrt(sum(x*x for x in a))
-    nb = math.sqrt(sum(x*x for x in b))
-    return dot / (na * nb) if na > 1e-8 and nb > 1e-8 else 0.0
 
 # ─── Colors ──────────────────────────────────────────────────────────
 CYAN    = "\033[96m"
@@ -86,7 +92,10 @@ def main():
 
     db = EdgeVDB(db_path)
     print(f"  {DIM}Database opened at: {db_path}{RESET}")
-    print(f"  {DIM}Embedding model: deterministic hash (384-dim, no ONNX){RESET}")
+    if real_embedder:
+        print(f"  {GREEN}Embedding model: Real ONNX MiniLM loaded successfully{RESET}")
+    else:
+        print(f"  {YELLOW}Embedding model: WARNING Using pseudo-random character hash (ONNX not found) - Semantic queries will return non-sense!{RESET}")
 
     # Store chunks locally for listing
     chunks = {}  # chunk_id -> (text, embedding, doc_id, page)
@@ -153,24 +162,27 @@ def main():
             print(f"  {DIM}│ Embedding: [{query_emb[0]:.4f}, {query_emb[1]:.4f}, ...]{RESET}")
             print(f"  {DIM}│{RESET}")
 
-            # Compute similarities manually for display
-            results = []
-            for cid, (txt, emb, did, pg) in chunks.items():
-                sim = cosine_sim(query_emb, emb)
-                results.append((sim, cid, txt))
-            results.sort(reverse=True)
+            # Compute similarities using real EdgeVDB C++ Engine
+            if real_embedder:
+                results = db.query_text(real_embedder, query_text, top_k=5)
+            else:
+                results = db.query_vector(query_emb, query_text, top_k=5)
 
-            top_k = min(5, len(results))
-            print(f"  {DIM}│ Results (top {top_k}):{RESET}")
+            count = min(5, results.count)
+            print(f"  {DIM}│ Results (top {count}):{RESET}")
             print(f"  {DIM}│{RESET}")
 
-            for i, (score, cid, txt) in enumerate(results[:top_k]):
-                bar_len = int(score * 20)
+            for i, r in enumerate(results):
+                # Pseudo-hash can return negative cosines, real cosine is -1 to 1. 
+                # Bar scale adjusts for formatting.
+                bar_len = min(20, max(0, int(r.score * 20)))
                 bar = "█" * bar_len + "░" * (20 - bar_len)
-                color = GREEN if score > 0.5 else YELLOW if score > 0.2 else DIM
-                print(f"  {DIM}│{RESET}  {BOLD}#{i+1}{RESET}  {color}[{bar}] {score:.4f}{RESET}")
-                print(f"  {DIM}│{RESET}      chunk_id={cid}  \"{txt}\"")
+                color = GREEN if r.score > 0.5 else YELLOW if r.score > 0.2 else DIM
+                print(f"  {DIM}│{RESET}  {BOLD}#{i+1}{RESET}  {color}[{bar}] {r.score:.4f}{RESET}")
+                print(f"  {DIM}│{RESET}      chunk_id={r.chunk_id}  \"{r.text}\"")
                 print(f"  {DIM}│{RESET}")
+
+            results.free()
 
             print(f"  {DIM}└────────────────────────────────────────{RESET}")
 
