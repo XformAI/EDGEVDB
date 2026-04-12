@@ -4,14 +4,21 @@
 #include <cstring>
 #include <cstdio>
 #include <string>
+#include <sys/stat.h>
+#include <sys/types.h>
+
+#ifdef _WIN32
+#include <direct.h>
+#define mkdir _mkdir
+#endif
 
 TEST_CASE("End-to-end C API") {
     // Create temp directory
     std::string temp_dir = "test_e2e_temp";
     #ifdef _WIN32
-    system(("mkdir " + temp_dir + " 2>NUL").c_str());
+    _mkdir(temp_dir.c_str());
     #else
-    system(("mkdir -p " + temp_dir).c_str());
+    mkdir(temp_dir.c_str(), 0755);
     #endif
 
     EvdbConfig config;
@@ -108,8 +115,15 @@ TEST_CASE("End-to-end C API") {
 
     // Cleanup
     #ifdef _WIN32
-    system(("rmdir /S /Q " + temp_dir + " 2>NUL").c_str());
+    // Windows: remove directory recursively
+    std::string cmd = "rmdir /S /Q " + temp_dir;
+    system(cmd.c_str());
     #else
-    system(("rm -rf " + temp_dir).c_str());
+    // Unix/macOS/iOS: remove directory recursively
+    std::string cmd = "rm -rf " + temp_dir;
+    // On iOS, system() is not available, so we skip cleanup
+    #ifndef __APPLE__
+    system(cmd.c_str());
+    #endif
     #endif
 }
