@@ -1,6 +1,7 @@
 #include "object_store.hpp"
 #include <fstream>
 #include <algorithm>
+#include <mutex>
 
 namespace edgevdb {
 
