@@ -37,7 +37,7 @@ android {
 }
 
 dependencies {
-    implementation("ai.edgevdb:sdk-release@aar")
+    implementation(project(":sdk"))
 
     // Compose
     val composeBom = platform(libs.compose.bom)
