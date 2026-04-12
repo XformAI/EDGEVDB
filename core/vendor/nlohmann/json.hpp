@@ -15,6 +15,7 @@
 #include <iostream>
 #include <cstring>
 #include <algorithm>
+#include <limits>
 
 namespace nlohmann {
 

@@ -11,6 +11,7 @@
 #include <cstdint>
 #include <cstring>
 #include <chrono>
+#include <functional>
 
 namespace edgevdb {
 
