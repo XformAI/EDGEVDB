@@ -3,6 +3,7 @@
 #include <cstring>
 #include <chrono>
 #include <numeric>
+#include <mutex>
 
 namespace edgevdb {
 

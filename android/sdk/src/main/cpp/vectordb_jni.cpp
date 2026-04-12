@@ -115,15 +115,11 @@ Java_ai_edgevdb_EdgeVDB_nativeInsertText(
     std::string text = jstringToStd(env, jText);
     std::string meta = jstringToStd(env, jMeta);
 
-    // Use the built-in embedder path if available
-    EvdbEmbedder* embedder = nullptr;  // placeholder — C++ embedder not used in Kotlin path
-    uint64_t chunkId = 0;
-    EvdbError rc = evdb_insert_chunk(h, text.c_str(), nullptr, 0, 0, &chunkId);
-    if (rc != EVDB_OK) {
-        throwJavaException(env, ("evdb_insert_text failed: " + std::to_string(rc)).c_str());
-        return -1;
-    }
-    return static_cast<jlong>(chunkId);
+    // Note: insertText requires an embedder handle
+    // For Android, users should use insertChunk with pre-computed embeddings
+    // This function is a placeholder for future C++ embedder integration
+    throwJavaException(env, "insertText requires C++ embedder - use insertChunk with pre-computed embeddings instead");
+    return -1;
 }
 
 extern "C" JNIEXPORT jlong JNICALL

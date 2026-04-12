@@ -1,6 +1,7 @@
 #include "page_index.hpp"
 #include <fstream>
 #include <cstring>
+#include <mutex>
 
 namespace edgevdb {
 

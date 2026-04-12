@@ -449,8 +449,8 @@ A complete Jetpack Compose demo is included in `demos/rag-demo/`:
 Run the demo to see EdgeVDB in action:
 
 ```bash
-cd android/demos/rag-demo
-./gradlew installDebug
+cd android
+./gradlew :demos:rag-demo:installDebug
 ```
 
 ## Troubleshooting

@@ -39,6 +39,29 @@
         "ANDROID_PLATFORM": "android-26",
         "CMAKE_BUILD_TYPE": "Release"
       }
+    },
+    {
+      "name": "ios-arm64",
+      "generator": "Ninja",
+      "binaryDir": "build/ios-arm64",
+      "toolchainFile": "$env{DEVELOPER_DIR}/Toolchains/XcodeDefault.xctoolchain/usr/bin/xcbuild",
+      "cacheVariables": {
+        "CMAKE_SYSTEM_NAME": "iOS",
+        "CMAKE_OSX_ARCHITECTURES": "arm64",
+        "CMAKE_OSX_DEPLOYMENT_TARGET": "15.0",
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "name": "ios-simulator-x86_64",
+      "generator": "Ninja",
+      "binaryDir": "build/ios-simulator-x86_64",
+      "cacheVariables": {
+        "CMAKE_SYSTEM_NAME": "iOS",
+        "CMAKE_OSX_ARCHITECTURES": "x86_64",
+        "CMAKE_OSX_DEPLOYMENT_TARGET": "15.0",
+        "CMAKE_BUILD_TYPE": "Release"
+      }
     }
   ],
   "buildPresets": [
@@ -49,6 +72,14 @@
     {
       "name": "desktop-release",
       "configurePreset": "desktop-release"
+    },
+    {
+      "name": "ios-arm64",
+      "configurePreset": "ios-arm64"
+    },
+    {
+      "name": "ios-simulator-x86_64",
+      "configurePreset": "ios-simulator-x86_64"
     }
   ]
 }
