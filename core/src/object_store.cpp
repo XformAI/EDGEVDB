@@ -2,6 +2,7 @@
 #include <fstream>
 #include <algorithm>
 #include <mutex>
+#include <functional>
 
 namespace edgevdb {
 
