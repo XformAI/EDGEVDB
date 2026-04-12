@@ -3,11 +3,14 @@ import Foundation
 /// SyncEngine — Swift wrapper for CRDT-based data sync.
 public final class SyncEngine {
     private var handle: OpaquePointer?
+    private weak var db: EdgeVDB?
 
     public init(db: EdgeVDB, deviceId: String = UUID().uuidString) throws {
+        self.db = db
         // Note: evdb_sync_create requires the db handle which is internal
-        // This is a convenience wrapper
-        handle = nil // Will be initialized via C API
+        // For now, this is a placeholder - proper implementation needs access to db.handle
+        // This would require making handle internal or adding a getter
+        handle = nil // Will be initialized via C API when handle is accessible
     }
 
     public func exportDelta(sinceClock: UInt64) throws -> String {

@@ -73,6 +73,16 @@ public final class EdgeVDB {
         return QueryResults(handle: qh)
     }
 
+    public func queryVector(embedding: [Float], queryText: String = "", 
+                          topK: Int = 5) throws -> QueryResults {
+        guard let h = handle else { throw EdgeVDBError.nullHandle }
+        var emb = embedding
+        guard let qh = evdb_query_vector(h, &emb, queryText, Int32(topK)) else {
+            throw EdgeVDBError.queryFailed
+        }
+        return QueryResults(handle: qh)
+    }
+
     // Object store
     public func putObject(type: String, properties: [String: Any]) throws -> UInt64 {
         guard let h = handle else { throw EdgeVDBError.nullHandle }
@@ -165,7 +175,7 @@ public final class QueryResults {
 
     init(handle: OpaquePointer) { self.handle = handle }
 
-    deinit { if let h = handle { evdb_query_free(h) } }
+    deinit { close() }
 
     public var count: Int { Int(evdb_result_count(handle)) }
 
@@ -185,6 +195,14 @@ public final class QueryResults {
 
     public func toArray() -> [ChunkResult] {
         (0..<count).map { self[$0] }
+    }
+    
+    /// Explicitly free the native query handle
+    public func close() {
+        if let h = handle { 
+            evdb_query_free(h)
+            handle = nil
+        }
     }
 }
 

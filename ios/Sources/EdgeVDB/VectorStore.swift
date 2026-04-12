@@ -25,10 +25,6 @@ public final class VectorStore {
 
     public func query(embedding: [Float], text: String = "", topK: Int = 5) throws -> QueryResults {
         guard let db = db else { throw EdgeVDBError.nullHandle }
-        var emb = embedding
-        guard let handle = evdb_query_vector(nil, &emb, text, Int32(topK)) else {
-            throw EdgeVDBError.queryFailed
-        }
-        return QueryResults(handle: handle)
+        return try db.queryVector(embedding: embedding, queryText: text, topK: topK)
     }
 }

@@ -47,6 +47,26 @@ final class EdgeVDBTests: XCTestCase {
         db.close()
     }
 
+    func testQueryVector() throws {
+        let db = try EdgeVDB(storageDir: tempDir)
+
+        var embedding = [Float](repeating: 0, count: 384)
+        embedding[0] = 1.0
+
+        let chunkId = try db.insertChunk(
+            embedding: embedding,
+            text: "Test chunk about machine learning",
+            docId: 1, pageNumber: 0
+        )
+
+        let results = try db.queryVector(embedding: embedding, queryText: "machine learning", topK: 5)
+        XCTAssertGreaterThan(results.count, 0)
+        results.close()
+
+        try db.save()
+        db.close()
+    }
+
     func testObjectStore() throws {
         let db = try EdgeVDB(storageDir: tempDir)
 
@@ -72,6 +92,47 @@ final class EdgeVDBTests: XCTestCase {
 
         try db.addRelation("authored_by", from: 1, to: 100)
         // Verify no crash
+        db.close()
+    }
+
+    func testTextChunker() {
+        let chunker = TextChunker(chunkSize: 10, chunkOverlap: 2, minChunkLength: 5)
+        let text = "This is a test text that should be split into multiple chunks for testing purposes."
+        let chunks = chunker.chunk(text, docId: "test-doc")
+        
+        XCTAssertGreaterThan(chunks.count, 1)
+        XCTAssertEqual(chunks.first?.docId, "test-doc")
+    }
+
+    func testModels() {
+        let chunk = DocumentChunk(text: "Test", docId: "doc1", page: 0)
+        XCTAssertEqual(chunk.text, "Test")
+        XCTAssertEqual(chunk.docId, "doc1")
+        
+        let result = QueryResult(chunkId: 1, text: "Result", score: 0.9, page: 0, docId: "doc1")
+        XCTAssertEqual(result.score, 0.9)
+        
+        let obj = ObjectRecord(id: 1, type: "Test", properties: ["key": "value"])
+        XCTAssertEqual(obj.type, "Test")
+        XCTAssertEqual(obj.property("key") as? String, "value")
+    }
+
+    func testQueryResultsClose() throws {
+        let db = try EdgeVDB(storageDir: tempDir)
+        
+        var embedding = [Float](repeating: 0, count: 384)
+        embedding[0] = 1.0
+        
+        let chunkId = try db.insertChunk(
+            embedding: embedding,
+            text: "Test chunk",
+            docId: 1, pageNumber: 0
+        )
+        
+        let results = try db.queryVector(embedding: embedding, queryText: "test", topK: 5)
+        XCTAssertGreaterThan(results.count, 0)
+        results.close() // Explicit close should work without crash
+        
         db.close()
     }
 }
