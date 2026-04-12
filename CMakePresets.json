@@ -48,7 +48,8 @@
         "CMAKE_SYSTEM_NAME": "iOS",
         "CMAKE_OSX_ARCHITECTURES": "arm64",
         "CMAKE_OSX_DEPLOYMENT_TARGET": "15.0",
-        "CMAKE_BUILD_TYPE": "Release"
+        "CMAKE_BUILD_TYPE": "Release",
+        "EDGEVDB_BUILD_TESTS": "OFF"
       }
     },
     {
@@ -59,7 +60,9 @@
         "CMAKE_SYSTEM_NAME": "iOS",
         "CMAKE_OSX_ARCHITECTURES": "x86_64",
         "CMAKE_OSX_DEPLOYMENT_TARGET": "15.0",
-        "CMAKE_BUILD_TYPE": "Release"
+        "CMAKE_BUILD_TYPE": "Release",
+        "EDGEVDB_BUILD_TESTS": "OFF",
+        "CMAKE_OSX_SYSROOT": "iphonesimulator"
       }
     }
   ],
