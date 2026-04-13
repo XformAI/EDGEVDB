@@ -13,27 +13,21 @@
 
 ## Setup
 
-### Option A: GitHub Packages (Recommended)
+### Option A: JitPack (Recommended)
 
 ```kotlin
-// settings.gradle.kts — add the repository
+// settings.gradle.kts
 repositories {
-    maven {
-        url = uri("https://maven.pkg.github.com/XformAI/EDGEVDB")
-        credentials {
-            username = project.findProperty("gpr.user") as String?
-            password = project.findProperty("gpr.token") as String?
-        }
-    }
+    maven { url = uri("https://jitpack.io") }
 }
 
 // build.gradle.kts
 dependencies {
-    implementation("in.xformai:edgevdb-android:1.0.3")
+    implementation("com.github.XformAI:EDGEVDB:v1.0.3")
 }
 ```
 
-> Add `gpr.user` and `gpr.token` (GitHub personal access token with `read:packages` scope) to `~/.gradle/gradle.properties`.
+No authentication required. JitPack builds directly from GitHub release tags.
 
 ### Option B: Local Module (Development)
 
