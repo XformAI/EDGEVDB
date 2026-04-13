@@ -102,6 +102,11 @@ python/edgevdb/lib/linux/
 python/edgevdb/lib/darwin/
 python/edgevdb/lib/windows/
 
+# Python build artifacts
+python/dist/
+python/build/
+python/edgevdb.egg-info/
+
 # Python
 __pycache__/
 *.py[cod]
