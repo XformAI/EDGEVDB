@@ -13,7 +13,29 @@
 
 ## Setup
 
-### Option A: Local Module (Development)
+### Option A: GitHub Packages (Recommended)
+
+```kotlin
+// settings.gradle.kts — add the repository
+repositories {
+    maven {
+        url = uri("https://maven.pkg.github.com/XformAI/EDGEVDB")
+        credentials {
+            username = project.findProperty("gpr.user") as String?
+            password = project.findProperty("gpr.token") as String?
+        }
+    }
+}
+
+// build.gradle.kts
+dependencies {
+    implementation("in.xformai:edgevdb-android:1.0.3")
+}
+```
+
+> Add `gpr.user` and `gpr.token` (GitHub personal access token with `read:packages` scope) to `~/.gradle/gradle.properties`.
+
+### Option B: Local Module (Development)
 
 Include the EdgeVDB Android SDK as a local Gradle module.
 
@@ -37,23 +59,6 @@ dependencies {
 cd android
 ./gradlew :sdk:assembleRelease
 ```
-
-### Option B: Maven Central (Production)
-
-After publishing to Maven Central:
-
-```kotlin
-// app/build.gradle.kts
-dependencies {
-    implementation("ai.edgevdb:edgevdb-android:1.0.0")
-}
-```
-
-### Option C: AAR File (Manual)
-
-1. Build the AAR: `./gradlew :sdk:assembleRelease`
-2. Copy `android/sdk/build/outputs/aar/sdk-release.aar` to your project
-3. Add as AAR dependency in Gradle
 
 ## Model Files
 

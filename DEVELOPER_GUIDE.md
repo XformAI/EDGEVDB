@@ -654,60 +654,39 @@ pip install edgevdb
 
 **pyproject.toml** is configured at `python/pyproject.toml`.
 
-### 10.2 Android → Maven Central / GitHub Packages
+### 10.2 Android → GitHub Packages
 
-```bash
-# 1. Build the AAR
-cd android
-./gradlew assembleRelease
+The Android SDK is **published on GitHub Packages**: [github.com/XformAI/EDGEVDB/packages](https://github.com/XformAI/EDGEVDB/packages)
 
-# Output: android/build/outputs/aar/edgevdb-release.aar
-```
+**Automated CI/CD:** Publishing is handled by GitHub Actions (`.github/workflows/publish-maven.yml`). On every tagged release (`v*`), the workflow builds the AAR and publishes to GitHub Packages automatically.
 
-**Publish to Maven Central:**
+**To release a new version:**
 
-```kotlin
-// android/build.gradle.kts — add publishing plugin
-plugins {
-    id("com.android.library")
-    id("maven-publish")
-    id("signing")
-}
-
-publishing {
-    publications {
-        create<MavenPublication>("release") {
-            groupId = "ai.edgevdb"
-            artifactId = "edgevdb-android"
-            version = "1.0.0"
-            afterEvaluate {
-                from(components["release"])
-            }
-        }
-    }
-    repositories {
-        maven {
-            url = uri("https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/")
-            credentials {
-                username = findProperty("ossrhUsername") as String?
-                password = findProperty("ossrhPassword") as String?
-            }
-        }
-    }
-}
-```
+1. Bump `EDGEVDB_VERSION` (passed via `-P` flag in CI, defaults to `1.0.0`)
+2. Commit and push to `main`
+3. Create a GitHub release with a `v*` tag (e.g. `v1.0.4`)
 
 **Users add to their project:**
 
 ```kotlin
-// build.gradle.kts
+// settings.gradle.kts
 repositories {
-    mavenCentral()
+    maven {
+        url = uri("https://maven.pkg.github.com/XformAI/EDGEVDB")
+        credentials {
+            username = project.findProperty("gpr.user") as String?
+            password = project.findProperty("gpr.token") as String?
+        }
+    }
 }
+
+// build.gradle.kts
 dependencies {
-    implementation("ai.edgevdb:edgevdb-android:1.0.0")
+    implementation("in.xformai:edgevdb-android:1.0.3")
 }
 ```
+
+> Users need a GitHub personal access token with `read:packages` scope.
 
 ### 10.3 C/C++ → System Package / CMake FetchContent
 
