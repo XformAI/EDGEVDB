@@ -205,6 +205,18 @@ We welcome contributions! Here's how to get started:
 
 Please read the [Developer Guide](DEVELOPER_GUIDE.md) for coding conventions and build setup.
 
+
+
+## Documentation
+
+- [**Developer Guide**](DEVELOPER_GUIDE.md) — Building, integration, publishing
+- [Architecture](docs/architecture.md) — System design and data flow
+- [API Reference](docs/api_reference.md) — Complete C API documentation
+- [Android Integration](docs/android_integration.md)
+- [iOS Integration](docs/ios_integration.md)
+- [Python Integration](docs/python_integration.md)
+
+
 ## License
 
 Apache License 2.0 — see [LICENSE](LICENSE).
@@ -216,23 +228,3 @@ Apache License 2.0 — see [LICENSE](LICENSE).
 **[XformAI](https://www.xformai.in/)** · Made with ❤️ for edge AI developers
 
 [Website](https://www.xformai.in/) · [Documentation](https://xformai.github.io/EDGEVDB/) · [GitHub](https://github.com/XformAI/EDGEVDB)
-
-</div>
-native) | **1,053 chunks/sec** |
-| Recall@5 (HNSW) | **96.8%** |
-| Recall@5 (Hybrid Ranker) | **95.8%** |
-| Library size (stripped) | **428 KB** (desktop) / **241 KB** (Android arm64) |
-| Memory (10k chunks) | **~23 MB** |
-
-## Documentation
-
-- [**Developer Guide**](DEVELOPER_GUIDE.md) — Building, integration, publishing
-- [Architecture](docs/architecture.md) — System design and data flow
-- [API Reference](docs/api_reference.md) — Complete C API documentation
-- [Android Integration](docs/android_integration.md)
-- [iOS Integration](docs/ios_integration.md)
-- [Python Integration](docs/python_integration.md)
-
-## License
-
-Apache License 2.0 — see [LICENSE](LICENSE).
