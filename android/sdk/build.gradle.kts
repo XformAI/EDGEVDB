@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "ai.edgevdb"
+    namespace = "in.xformai.edgevdb"
     compileSdk = 35
 
     defaultConfig {
