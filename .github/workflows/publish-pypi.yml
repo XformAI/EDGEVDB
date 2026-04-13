@@ -8,14 +8,13 @@ on:
 jobs:
   build-native-linux:
     runs-on: ubuntu-latest
-    container: quay.io/pypa/manylinux2014_x86_64
+    container: quay.io/pypa/manylinux_2_28_x86_64
     steps:
       - uses: actions/checkout@v4
 
       - name: Install build tools
         run: |
-          yum install -y ninja-build
-          pip3 install cmake
+          dnf install -y ninja-build cmake
 
       - name: Build native library (Release)
         run: |
