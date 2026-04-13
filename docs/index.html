@@ -231,22 +231,22 @@
                     <div class="arch-layer-label">Platform SDKs</div>
                     <div class="arch-blocks">
                         <div class="arch-block arch-python" data-tooltip="ctypes FFI binding">
-                            <span class="arch-icon">🐍</span>
+                            <span class="arch-icon"><svg width="22" height="22" viewBox="0 0 256 255" fill="currentColor"><path d="M126.9.1C61.5.3 65.5 28.7 65.5 28.7l.1 29.8h62.4v9H39.8S0 62.5 0 127.3s34.7 62.5 34.7 62.5h20.7v-30.1s-1.1-34.7 34.1-34.7h58.7s33 .5 33-31.9V35.6S186.1-.2 126.9.1zM92.3 20.7a10.6 10.6 0 110 21.2 10.6 10.6 0 010-21.2z"/><path d="M128.8 254.1c65.4-.2 61.4-28.6 61.4-28.6l-.1-29.8H127.7v-9h88.2s39.8 5 39.8-59.8-34.7-62.5-34.7-62.5h-20.7v30.1s1.1 34.7-34.1 34.7h-58.7s-33-.5-33 31.9v57.5s-5 33.7 54.3 35.5zm34.6-20.6a10.6 10.6 0 110-21.2 10.6 10.6 0 010 21.2z"/></svg></span>
                             <span>Python SDK</span>
                             <span class="arch-sub">ctypes</span>
                         </div>
                         <div class="arch-block arch-android" data-tooltip="JNI + Kotlin wrapper">
-                            <span class="arch-icon">🤖</span>
+                            <span class="arch-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M6 18c0 .55.45 1 1 1h1v3.5c0 .83.67 1.5 1.5 1.5s1.5-.67 1.5-1.5V19h2v3.5c0 .83.67 1.5 1.5 1.5s1.5-.67 1.5-1.5V19h1c.55 0 1-.45 1-1V8H6v10zM3.5 8C2.67 8 2 8.67 2 9.5v7c0 .83.67 1.5 1.5 1.5S5 17.33 5 16.5v-7C5 8.67 4.33 8 3.5 8zm17 0c-.83 0-1.5.67-1.5 1.5v7c0 .83.67 1.5 1.5 1.5s1.5-.67 1.5-1.5v-7c0-.83-.67-1.5-1.5-1.5zm-4.97-5.84l1.3-1.3c.2-.2.2-.51 0-.71-.2-.2-.51-.2-.71 0l-1.48 1.48A5.84 5.84 0 0012 1c-.96 0-1.86.23-2.66.63L7.85.15c-.2-.2-.51-.2-.71 0-.2.2-.2.51 0 .71l1.31 1.31A5.98 5.98 0 006 7h12a5.98 5.98 0 00-2.47-4.84zM10 5H9V4h1v1zm5 0h-1V4h1v1z"/></svg></span>
                             <span>Android SDK</span>
                             <span class="arch-sub">JNI / Kotlin</span>
                         </div>
                         <div class="arch-block arch-c" data-tooltip="Stable ABI-compatible C header">
-                            <span class="arch-icon">⚙️</span>
+                            <span class="arch-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 18l6-6-6-6M8 6l-6 6 6 6"/></svg></span>
                             <span>C API</span>
                             <span class="arch-sub">vectordb.h</span>
                         </div>
                         <div class="arch-block arch-ios" data-tooltip="Swift wrapper with C bridge">
-                            <span class="arch-icon">🍎</span>
+                            <span class="arch-icon"><svg width="20" height="22" viewBox="0 0 814 1000" fill="currentColor"><path d="M788.1 340.9c-5.8 4.5-108.2 62.2-108.2 190.5 0 148.4 130.3 200.9 134.2 202.2-.6 3.2-20.7 71.9-68.7 141.9-42.8 61.6-87.5 123.1-155.5 123.1s-85.5-39.5-164-39.5c-76.5 0-103.7 40.8-165.9 40.8s-105.6-57.4-155.5-127.3C34.4 784.7 0 652.7 0 524.7c0-191.4 124.5-293 247.9-293 65.4 0 119.8 42.8 160.8 42.8 39.4 0 100.9-45.5 174.5-45.5 28.3 0 130.1 2.6 197.5 96.9z"/><path d="M554.1 0c3.2 25.7-7.4 51.4-21.8 70.7-19 25.7-52.1 45.4-83.9 42.8-4.5-25.7 8.7-52.7 22.4-69.3 19-24.4 54.7-43.5 83.3-44.2z"/></svg></span>
                             <span>iOS SDK</span>
                             <span class="arch-sub">Swift</span>
                         </div>
@@ -342,18 +342,10 @@
             </div>
             <div class="code-tabs" id="quickstart-tabs">
                 <div class="tabs-bar">
-                    <button class="tab active" data-target="qs-python" id="qs-tab-python">
-                        <span class="tab-icon">🐍</span> Python
-                    </button>
-                    <button class="tab" data-target="qs-kotlin" id="qs-tab-kotlin">
-                        <span class="tab-icon">🤖</span> Android
-                    </button>
-                    <button class="tab" data-target="qs-swift" id="qs-tab-swift">
-                        <span class="tab-icon">🍎</span> iOS
-                    </button>
-                    <button class="tab" data-target="qs-c" id="qs-tab-c">
-                        <span class="tab-icon">⚙️</span> C API
-                    </button>
+                    <button class="tab active" data-target="qs-python" id="qs-tab-python">Python</button>
+                    <button class="tab" data-target="qs-kotlin" id="qs-tab-kotlin">Android</button>
+                    <button class="tab" data-target="qs-swift" id="qs-tab-swift">iOS</button>
+                    <button class="tab" data-target="qs-c" id="qs-tab-c">C API</button>
                 </div>
                 <div class="tabs-content">
                     <div class="tab-panel active" id="qs-python">
@@ -463,7 +455,7 @@ evdb_close(db);</code></pre>
             <div class="api-grid">
                 <div class="api-group" id="api-lifecycle">
                     <h3 class="api-group-title">
-                        <span class="api-group-icon">🔄</span> Lifecycle
+                        <span class="api-group-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4v6h6M23 20v-6h-6"/><path d="M20.49 9A9 9 0 005.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 013.51 15"/></svg></span> Lifecycle
                     </h3>
                     <div class="api-items">
                         <div class="api-item">
@@ -486,7 +478,7 @@ evdb_close(db);</code></pre>
                 </div>
                 <div class="api-group" id="api-insert">
                     <h3 class="api-group-title">
-                        <span class="api-group-icon">📥</span> Insert
+                        <span class="api-group-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg></span> Insert
                     </h3>
                     <div class="api-items">
                         <div class="api-item">
@@ -505,7 +497,7 @@ evdb_close(db);</code></pre>
                 </div>
                 <div class="api-group" id="api-query">
                     <h3 class="api-group-title">
-                        <span class="api-group-icon">🔍</span> Query
+                        <span class="api-group-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg></span> Query
                     </h3>
                     <div class="api-items">
                         <div class="api-item">
@@ -528,7 +520,7 @@ evdb_close(db);</code></pre>
                 </div>
                 <div class="api-group" id="api-objects">
                     <h3 class="api-group-title">
-                        <span class="api-group-icon">📦</span> Objects & Relations
+                        <span class="api-group-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><path d="M3.27 6.96L12 12.01l8.73-5.05M12 22.08V12"/></svg></span> Objects &amp; Relations
                     </h3>
                     <div class="api-items">
                         <div class="api-item">
@@ -551,7 +543,7 @@ evdb_close(db);</code></pre>
                 </div>
                 <div class="api-group" id="api-sync">
                     <h3 class="api-group-title">
-                        <span class="api-group-icon">🔁</span> Sync
+                        <span class="api-group-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 16V4m0 0L3 8m4-4l4 4M17 8v12m0 0l4-4m-4 4l-4-4"/></svg></span> Sync
                     </h3>
                     <div class="api-items">
                         <div class="api-item">
@@ -570,7 +562,7 @@ evdb_close(db);</code></pre>
                 </div>
                 <div class="api-group" id="api-config">
                     <h3 class="api-group-title">
-                        <span class="api-group-icon">⚙️</span> Configuration
+                        <span class="api-group-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12.22 2h-.44a2 2 0 00-2 2v.18a2 2 0 01-1 1.73l-.43.25a2 2 0 01-2 0l-.15-.08a2 2 0 00-2.73.73l-.22.38a2 2 0 00.73 2.73l.15.1a2 2 0 011 1.72v.51a2 2 0 01-1 1.74l-.15.09a2 2 0 00-.73 2.73l.22.38a2 2 0 002.73.73l.15-.08a2 2 0 012 0l.43.25a2 2 0 011 1.73V20a2 2 0 002 2h.44a2 2 0 002-2v-.18a2 2 0 011-1.73l.43-.25a2 2 0 012 0l.15.08a2 2 0 002.73-.73l.22-.39a2 2 0 00-.73-2.73l-.15-.08a2 2 0 01-1-1.74v-.5a2 2 0 011-1.74l.15-.09a2 2 0 00.73-2.73l-.22-.38a2 2 0 00-2.73-.73l-.15.08a2 2 0 01-2 0l-.43-.25a2 2 0 01-1-1.73V4a2 2 0 00-2-2z"/><circle cx="12" cy="12" r="3"/></svg></span> Configuration
                     </h3>
                     <div class="api-items config-table">
                         <div class="config-row">
@@ -815,7 +807,7 @@ evdb_close(db);</code></pre>
             </div>
             <div class="platform-cards">
                 <div class="platform-card" id="platform-android">
-                    <div class="platform-icon">🤖</div>
+                    <div class="platform-icon"><svg width="36" height="36" viewBox="0 0 24 24" fill="var(--accent-secondary)"><path d="M6 18c0 .55.45 1 1 1h1v3.5c0 .83.67 1.5 1.5 1.5s1.5-.67 1.5-1.5V19h2v3.5c0 .83.67 1.5 1.5 1.5s1.5-.67 1.5-1.5V19h1c.55 0 1-.45 1-1V8H6v10zM3.5 8C2.67 8 2 8.67 2 9.5v7c0 .83.67 1.5 1.5 1.5S5 17.33 5 16.5v-7C5 8.67 4.33 8 3.5 8zm17 0c-.83 0-1.5.67-1.5 1.5v7c0 .83.67 1.5 1.5 1.5s1.5-.67 1.5-1.5v-7c0-.83-.67-1.5-1.5-1.5zm-4.97-5.84l1.3-1.3c.2-.2.2-.51 0-.71-.2-.2-.51-.2-.71 0l-1.48 1.48A5.84 5.84 0 0012 1c-.96 0-1.86.23-2.66.63L7.85.15c-.2-.2-.51-.2-.71 0-.2.2-.2.51 0 .71l1.31 1.31A5.98 5.98 0 006 7h12a5.98 5.98 0 00-2.47-4.84zM10 5H9V4h1v1zm5 0h-1V4h1v1z"/></svg></div>
                     <h3>Android</h3>
                     <p>Kotlin SDK with JNI bridge. AAR distribution via Maven Central.</p>
                     <div class="platform-specs">
@@ -826,7 +818,7 @@ evdb_close(db);</code></pre>
                     <span class="platform-size">241 KB native lib</span>
                 </div>
                 <div class="platform-card" id="platform-ios">
-                    <div class="platform-icon">🍎</div>
+                    <div class="platform-icon"><svg width="32" height="36" viewBox="0 0 814 1000" fill="var(--accent-secondary)"><path d="M788.1 340.9c-5.8 4.5-108.2 62.2-108.2 190.5 0 148.4 130.3 200.9 134.2 202.2-.6 3.2-20.7 71.9-68.7 141.9-42.8 61.6-87.5 123.1-155.5 123.1s-85.5-39.5-164-39.5c-76.5 0-103.7 40.8-165.9 40.8s-105.6-57.4-155.5-127.3C34.4 784.7 0 652.7 0 524.7c0-191.4 124.5-293 247.9-293 65.4 0 119.8 42.8 160.8 42.8 39.4 0 100.9-45.5 174.5-45.5 28.3 0 130.1 2.6 197.5 96.9z"/><path d="M554.1 0c3.2 25.7-7.4 51.4-21.8 70.7-19 25.7-52.1 45.4-83.9 42.8-4.5-25.7 8.7-52.7 22.4-69.3 19-24.4 54.7-43.5 83.3-44.2z"/></svg></div>
                     <h3>iOS</h3>
                     <p>Swift SDK with C bridging header. SPM and CocoaPods support.</p>
                     <div class="platform-specs">
@@ -837,7 +829,7 @@ evdb_close(db);</code></pre>
                     <span class="platform-size">XCFramework</span>
                 </div>
                 <div class="platform-card" id="platform-python">
-                    <div class="platform-icon">🐍</div>
+                    <div class="platform-icon"><svg width="34" height="34" viewBox="0 0 256 255" fill="var(--accent-secondary)"><path d="M126.9.1C61.5.3 65.5 28.7 65.5 28.7l.1 29.8h62.4v9H39.8S0 62.5 0 127.3s34.7 62.5 34.7 62.5h20.7v-30.1s-1.1-34.7 34.1-34.7h58.7s33 .5 33-31.9V35.6S186.1-.2 126.9.1zM92.3 20.7a10.6 10.6 0 110 21.2 10.6 10.6 0 010-21.2z"/><path d="M128.8 254.1c65.4-.2 61.4-28.6 61.4-28.6l-.1-29.8H127.7v-9h88.2s39.8 5 39.8-59.8-34.7-62.5-34.7-62.5h-20.7v30.1s1.1 34.7-34.1 34.7h-58.7s-33-.5-33 31.9v57.5s-5 33.7 54.3 35.5zm34.6-20.6a10.6 10.6 0 110-21.2 10.6 10.6 0 010 21.2z"/></svg></div>
                     <h3>Python</h3>
                     <p>Zero-install ctypes binding. PyPI package available.</p>
                     <div class="platform-specs">
@@ -849,7 +841,7 @@ evdb_close(db);</code></pre>
                     <span class="platform-size">pip install edgevdb</span>
                 </div>
                 <div class="platform-card" id="platform-desktop">
-                    <div class="platform-icon">🖥️</div>
+                    <div class="platform-icon"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="var(--accent-secondary)" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg></div>
                     <h3>Desktop / IoT</h3>
                     <p>Static or shared library. CMake FetchContent integration.</p>
                     <div class="platform-specs">
@@ -874,7 +866,7 @@ evdb_close(db);</code></pre>
             </div>
             <div class="build-grid">
                 <div class="build-card" id="build-desktop">
-                    <h3>🖥️ Desktop</h3>
+                    <h3>Desktop</h3>
                     <div class="code-block code-small">
                         <pre><code><span class="cm"># Debug (with tests)</span>
 cmake --preset desktop-debug
@@ -886,7 +878,7 @@ cmake --build build/desktop-release</code></pre>
                     </div>
                 </div>
                 <div class="build-card" id="build-android">
-                    <h3>🤖 Android</h3>
+                    <h3>Android</h3>
                     <div class="code-block code-small">
                         <pre><code><span class="kw">export</span> ANDROID_NDK=<span class="str">"/path/to/ndk"</span>
 
@@ -900,7 +892,7 @@ cmake --build build/android-x86_64</code></pre>
                     </div>
                 </div>
                 <div class="build-card" id="build-tests">
-                    <h3>🧪 Tests</h3>
+                    <h3>Tests</h3>
                     <div class="code-block code-small">
                         <pre><code><span class="cm"># Run all C++ tests</span>
 ./build/desktop-debug/tests/test_hnsw
@@ -939,28 +931,28 @@ cmake --build build/android-x86_64</code></pre>
                         <p>EdgeVDB is our flagship open-source SDK — a zero-dependency vector database purpose-built for mobile, desktop, and IoT devices. From smartphones to Raspberry Pi, our technology powers private, offline-first AI experiences without compromising on performance.</p>
                         <div class="about-highlights">
                             <div class="about-highlight-item">
-                                <div class="about-highlight-icon">🔒</div>
+                                <div class="about-highlight-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg></div>
                                 <div>
                                     <strong>Privacy First</strong>
                                     <p>All data stays on-device. No cloud. No telemetry. No API keys required.</p>
                                 </div>
                             </div>
                             <div class="about-highlight-item">
-                                <div class="about-highlight-icon">⚡</div>
+                                <div class="about-highlight-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></div>
                                 <div>
                                     <strong>Performance Obsessed</strong>
                                     <p>Sub-millisecond queries. 428 KB footprint. SIMD-optimized for ARM & x86.</p>
                                 </div>
                             </div>
                             <div class="about-highlight-item">
-                                <div class="about-highlight-icon">🌍</div>
+                                <div class="about-highlight-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg></div>
                                 <div>
                                     <strong>Truly Cross-Platform</strong>
                                     <p>One C++ core, native SDKs for Android, iOS, Python, and Desktop.</p>
                                 </div>
                             </div>
                             <div class="about-highlight-item">
-                                <div class="about-highlight-icon">🤝</div>
+                                <div class="about-highlight-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></svg></div>
                                 <div>
                                     <strong>Open Source</strong>
                                     <p>Apache 2.0 licensed. Build with us, contribute, and shape the future of edge AI.</p>
