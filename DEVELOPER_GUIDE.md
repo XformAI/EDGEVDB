@@ -277,7 +277,14 @@ int main() {
 
 ### 5.1 Install
 
-**Option A: From built shared library**
+**Option A: From PyPI (Recommended)**
+```bash
+pip install edgevdb
+```
+
+Pre-built wheels include native libraries for Linux (x86_64, glibc 2.28+), macOS (arm64/x86_64), and Windows (x86_64).
+
+**Option B: From Source (Development)**
 ```bash
 # Build the SDK first
 cmake --preset desktop-release && cmake --build build/desktop-release
@@ -288,11 +295,6 @@ cp build/desktop-release/core/libedgevdb_shared.so python/edgevdb/lib/linux/
 
 # Install in development mode
 cd python && pip install -e .
-```
-
-**Option B: From published package (after publishing to PyPI)**
-```bash
-pip install edgevdb
 ```
 
 ### 5.2 Usage — Without ONNX (Recommended for Flexibility)
@@ -631,37 +633,26 @@ file build/android-x86_64/core/libedgevdb_shared.so  # ELF 64-bit x86-64
 
 ### 10.1 Python → PyPI
 
-```bash
-cd python
-
-# 1. Copy the built shared library into the package (platform-specific)
-# Linux:
-cp ../build/desktop-release/core/libedgevdb_shared.so edgevdb/lib/linux/
-# macOS:
-# cp ../build/desktop-release/core/libedgevdb_shared.dylib edgevdb/lib/darwin/
-# Windows (from PowerShell):
-# copy ..\build\desktop-release\core\edgevdb_shared.dll edgevdb\lib\windows\
-
-# 2. Build the wheel
-pip install build
-python3 -m build
-
-# 3. Upload to PyPI
-pip install twine
-twine upload dist/*
-
-# 4. Users install with:
-#    pip install edgevdb
-```
-
-**For multi-platform wheels**, build on each OS (Linux, macOS, Windows) and use `cibuildwheel`:
+The package is **published on PyPI**: [pypi.org/project/edgevdb](https://pypi.org/project/edgevdb/)
 
 ```bash
-pip install cibuildwheel
-cibuildwheel --platform linux   # Builds manylinux wheels
+pip install edgevdb
 ```
 
-**pyproject.toml** is already configured at `python/pyproject.toml`.
+**Automated CI/CD:** Publishing is handled by GitHub Actions (`.github/workflows/publish-pypi.yml`). On every tagged release (`v*`), the workflow:
+
+1. Builds native libraries on Linux (manylinux_2_28), macOS, and Windows
+2. Packages them into a Python wheel with all platform binaries
+3. Publishes to TestPyPI (every run) and PyPI (tagged releases only)
+4. Uses OIDC trusted publishing (no API tokens needed)
+
+**To release a new version:**
+
+1. Bump `version` in `python/pyproject.toml`
+2. Commit and push to `main`
+3. Create a GitHub release with a `v*` tag (e.g. `v1.0.4`)
+
+**pyproject.toml** is configured at `python/pyproject.toml`.
 
 ### 10.2 Android → Maven Central / GitHub Packages
 

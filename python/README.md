@@ -15,6 +15,14 @@ The EdgeVDB Python SDK provides a Pythonic interface to the EdgeVDB C++ core lib
 
 ## Installation
 
+### From PyPI (Recommended)
+
+```bash
+pip install edgevdb
+```
+
+Pre-built wheels include native libraries for **Linux** (x86_64, glibc 2.28+), **macOS** (arm64/x86_64), and **Windows** (x86_64).
+
 ### From Source
 
 ```bash
@@ -34,12 +42,6 @@ cp build/desktop-release/core/libedgevdb_shared.so python/edgevdb/lib/linux/
 # Install in development mode
 cd python
 pip install -e .
-```
-
-### From PyPI (after publishing)
-
-```bash
-pip install edgevdb
 ```
 
 ## Quick Start

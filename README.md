@@ -7,7 +7,8 @@
 **Built by [XformAI](https://www.xformai.in/) — Transforming AI for the Real World**
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-1.0.0-green.svg)]()
+[![Version](https://img.shields.io/badge/version-1.0.3-green.svg)]()
+[![PyPI](https://img.shields.io/pypi/v/edgevdb.svg)](https://pypi.org/project/edgevdb/)
 [![C++17](https://img.shields.io/badge/C%2B%2B-17-orange.svg)]()
 [![Platforms](https://img.shields.io/badge/platforms-Android%20%7C%20iOS%20%7C%20Desktop-lightgrey.svg)]()
 [![Docs](https://img.shields.io/badge/docs-edgevdb.xformai.in-6366f1.svg)](https://xformai.github.io/EDGEVDB/)
@@ -19,8 +20,6 @@
 ---
 
 > **Embeddable cross-platform vector database with HNSW ANN, hybrid retrieval, knowledge graph, relational object store, and CRDT-based sync — all in a single zero-dependency C++ library.**
->
-> **Note:** EdgeVDB is under active development. PyPI and Maven Central packages are not yet published — build from source for now. See [Building](#building).
 
 ## Why EdgeVDB?
 
@@ -147,7 +146,21 @@ with EdgeVDB("./data") as db:
     print(results.context_string)
 ```
 
-## Building
+## Installation
+
+### Python (PyPI)
+
+```bash
+pip install edgevdb
+```
+
+```python
+from edgevdb import EdgeVDB
+with EdgeVDB("./data") as db:
+    print("EdgeVDB ready!")
+```
+
+### Building from Source
 
 ```bash
 # Desktop (Linux/macOS/WSL)

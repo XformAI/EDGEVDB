@@ -5,23 +5,25 @@
 ## Prerequisites
 
 - **Python** 3.8+
-- Built EdgeVDB shared library: `.so` (Linux), `.dylib` (macOS), `.dll` (Windows)
 - ctypes (standard library, no pip install needed)
 
-## Building the Library
+## Installation
+
+### Option A: From PyPI (Recommended)
 
 ```bash
-cmake --preset desktop-release
-cmake --build build/desktop-release
+pip install edgevdb
 ```
 
-**Output:** `build/desktop-release/core/libedgevdb_shared.so` (Linux), `.dylib` (macOS), `.dll` (Windows)
+Pre-built wheels include native libraries for **Linux** (x86_64, glibc 2.28+), **macOS** (arm64/x86_64), and **Windows** (x86_64). No build tools required.
 
-## Setup
-
-### Option A: Development Mode (Recommended)
+### Option B: From Source (Development)
 
 ```bash
+# Build the C++ core
+cmake --preset desktop-release
+cmake --build build/desktop-release
+
 # Copy shared library into the Python package
 cp build/desktop-release/core/libedgevdb_shared.so python/edgevdb/lib/linux/
 
@@ -30,27 +32,7 @@ cd python
 pip install -e .
 ```
 
-### Option B: Library Search Path
-
-```bash
-# Set library search path
-export LD_LIBRARY_PATH=build/desktop-release/core:$LD_LIBRARY_PATH  # Linux
-export DYLD_LIBRARY_PATH=build/desktop-release/core:$DYLD_LIBRARY_PATH  # macOS
-# On Windows: Add to PATH
-```
-
-### Option C: System-wide Installation
-
-```bash
-# Copy library to system location
-sudo cp build/desktop-release/core/libedgevdb_shared.so /usr/local/lib/  # system-wide
-# Or into package: cp build/desktop-release/core/libedgevdb_shared.so python/edgevdb/lib/linux/
-sudo ldconfig  # Linux only
-
-# Install Python package
-cd python
-pip install -e .
-```
+**Output:** `build/desktop-release/core/libedgevdb_shared.so` (Linux), `.dylib` (macOS), `.dll` (Windows)
 
 ## Usage
 
