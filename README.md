@@ -146,14 +146,19 @@ cmake --build build/android-arm64
 
 See [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md) for full build instructions, integration guides, and publishing workflows.
 
-## Performance Targets
+## Benchmarks
 
-| Metric | Target | Platform |
-|---|---|---|
-| Query latency (10k chunks) | < 100ms | Desktop |
-| Library size (stripped) | < 4 MB | Android arm64 |
+See [BENCHMARKS.md](BENCHMARKS.md) for the full benchmark report with real measured data — query latency, insert throughput, recall accuracy, memory usage, library sizes, cross-platform results, and comparison with existing vector databases.
 
-> **Note:** Run `bench_query` and `bench_build` from a release build to measure actual performance on your hardware. See [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md) §9.
+| Metric (10k chunks, 384-dim) | Measured |
+|---|---:|
+| Query latency (C++ native) | **0.99 ms avg** |
+| Query latency (Python SDK) | **7.74 ms avg** |
+| Insert throughput (C++ native) | **1,053 chunks/sec** |
+| Recall@5 (HNSW) | **96.8%** |
+| Recall@5 (Hybrid Ranker) | **95.8%** |
+| Library size (stripped) | **428 KB** (desktop) / **241 KB** (Android arm64) |
+| Memory (10k chunks) | **~23 MB** |
 
 ## Documentation
 

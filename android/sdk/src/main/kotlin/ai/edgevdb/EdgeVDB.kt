@@ -69,9 +69,9 @@ class EdgeVDB private constructor(private var nativeHandle: Long) {
         @JvmStatic private external fun nativeClose(handle: Long)
         @JvmStatic private external fun nativeSave(handle: Long): Int
         @JvmStatic private external fun nativeInsertText(handle: Long, text: String, meta: String): Long
-        @JvmStatic private external fun nativeInsertChunk(handle: Long, text: String, embedding: FloatArray, meta: String): Long
+        @JvmStatic private external fun nativeInsertChunk(handle: Long, text: String, embedding: FloatArray, meta: String, docId: Int, pageNumber: Int): Long
         @JvmStatic private external fun nativeQueryText(handle: Long, query: String, topK: Int): String
-        @JvmStatic private external fun nativeQueryVector(handle: Long, embedding: FloatArray, topK: Int): String
+        @JvmStatic private external fun nativeQueryVector(handle: Long, embedding: FloatArray, topK: Int, queryText: String): String
         @JvmStatic private external fun nativeObjectPut(handle: Long, collection: String, id: String, json: String): Int
         @JvmStatic private external fun nativeObjectGet(handle: Long, collection: String, id: String): String
         @JvmStatic private external fun nativeRelationAdd(handle: Long, fromCol: String, fromId: String, relType: String, toCol: String, toId: String): Int
@@ -96,7 +96,8 @@ class EdgeVDB private constructor(private var nativeHandle: Long) {
         withContext(Dispatchers.IO) {
             requireOpen()
             Log.d(TAG, "EdgeVDB.insertChunk: text='${chunk.text.take(30)}…', embedding size=${embedding.size}, L2 norm=${embedding.map { it * it }.sum().let { kotlin.math.sqrt(it) }}")
-            val id = nativeInsertChunk(nativeHandle, chunk.text, embedding, chunk.metadata)
+            val id = nativeInsertChunk(nativeHandle, chunk.text, embedding, chunk.metadata,
+                chunk.docId.hashCode(), chunk.page)
             Log.d(TAG, "EdgeVDB.insertChunk: returned id=$id")
             id
         }
@@ -116,11 +117,11 @@ class EdgeVDB private constructor(private var nativeHandle: Long) {
      * @param embedding  384-dim L2-normalised query vector.
      * @param topK       Maximum number of results to return.
      */
-    suspend fun queryVector(embedding: FloatArray, topK: Int = 5): List<ChunkResult> =
+    suspend fun queryVector(embedding: FloatArray, topK: Int = 5, queryText: String = ""): List<ChunkResult> =
         withContext(Dispatchers.IO) {
             requireOpen()
             Log.d(TAG, "EdgeVDB.queryVector: embedding size=${embedding.size}, L2 norm=${embedding.map { it * it }.sum().let { kotlin.math.sqrt(it) }}, topK=$topK")
-            val jsonStr = nativeQueryVector(nativeHandle, embedding, topK)
+            val jsonStr = nativeQueryVector(nativeHandle, embedding, topK, queryText)
             Log.d(TAG, "EdgeVDB.queryVector: native result=$jsonStr")
             val results = parseResults(jsonStr)
             Log.d(TAG, "EdgeVDB.queryVector: parsed ${results.size} results")

@@ -49,4 +49,15 @@ if(CMAKE_BUILD_TYPE STREQUAL "Release")
         ${CMAKE_SOURCE_DIR}/core/src
         ${CMAKE_SOURCE_DIR}/core/include
     )
+
+    add_executable(bench_extended benchmarks/bench_extended.cpp)
+    target_link_libraries(bench_extended PRIVATE edgevdb_core)
+    if(TARGET Threads::Threads)
+        target_link_libraries(bench_extended PRIVATE Threads::Threads)
+    endif()
+    target_include_directories(bench_extended PRIVATE
+        ${CMAKE_SOURCE_DIR}/core/vendor
+        ${CMAKE_SOURCE_DIR}/core/src
+        ${CMAKE_SOURCE_DIR}/core/include
+    )
 endif()

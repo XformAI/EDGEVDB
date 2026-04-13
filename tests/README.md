@@ -311,16 +311,6 @@ Results:
 - M: 8, 16, 32
 - ef_construction: 100, 200, 400
 
-## Performance Targets
-
-| Metric | Target | Platform |
-|--------|--------|----------|
-| Query latency (10k chunks) | < 100ms | Desktop |
-| Query latency (10k chunks) | < 200ms | Raspberry Pi |
-| Index build (10k chunks) | < 5s | Desktop |
-| Index build (10k chunks) | < 10s | Raspberry Pi |
-| Memory footprint (10k chunks) | < 100 MB | Desktop |
-
 ## Test Framework
 
 EdgeVDB uses **doctest** as its testing framework:

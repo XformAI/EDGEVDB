@@ -14,16 +14,19 @@ def _find_library() -> str:
     """Find the EdgeVDB shared library."""
     system = platform.system()
     if system == "Windows":
-        names = ["edgevdb_shared.dll", "edgevdb.dll"]
+        names = ["libedgevdb_shared.dll", "edgevdb_shared.dll", "edgevdb.dll"]
     elif system == "Darwin":
         names = ["libedgevdb_shared.dylib", "libedgevdb.dylib"]
     else:
         names = ["libedgevdb_shared.so", "libedgevdb.so"]
 
-    # Search paths
+    # Search paths — platform-specific lib/ subdirectory first
+    pkg_dir = Path(__file__).parent
+    plat_dir = {"Windows": "windows", "Darwin": "darwin", "Linux": "linux"}.get(system, "linux")
     search_dirs = [
-        Path(__file__).parent,
-        Path(__file__).parent / "lib",
+        pkg_dir / "lib" / plat_dir,
+        pkg_dir / "lib",
+        pkg_dir,
         Path.cwd(),
         Path.cwd() / "build",
         Path.cwd() / "build" / "desktop-release" / "core",

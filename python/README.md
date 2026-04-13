@@ -23,10 +23,13 @@ cd ..
 cmake --preset desktop-release
 cmake --build build/desktop-release
 
-# Copy shared library to Python package
-cp build/desktop-release/core/libedgevdb_shared.so python/edgevdb/
-# On macOS: cp build/desktop-release/core/libedgevdb_shared.dylib python/edgevdb/
-# On Windows: copy build\desktop-release\core\edgevdb_shared.dll python\edgevdb\
+# Copy shared library to Python package (platform-specific)
+# Linux:
+cp build/desktop-release/core/libedgevdb_shared.so python/edgevdb/lib/linux/
+# macOS:
+# cp build/desktop-release/core/libedgevdb_shared.dylib python/edgevdb/lib/darwin/
+# Windows:
+# copy build\desktop-release\core\edgevdb_shared.dll python\edgevdb\lib\windows\
 
 # Install in development mode
 cd python
@@ -458,17 +461,20 @@ except RuntimeError as e:
 
 The Python SDK automatically searches for the EdgeVDB shared library in the following locations:
 
-1. Package directory (`edgevdb/`)
+1. Platform-specific directory (`edgevdb/lib/<platform>/`) — **preferred**
 2. Package lib directory (`edgevdb/lib/`)
-3. Current working directory
-4. `build/` directory
+3. Package directory (`edgevdb/`)
+4. Current working directory
 5. `build/desktop-release/core/`
 6. `build/desktop-debug/core/`
 
-**Library Names by Platform:**
-- Linux: `libedgevdb_shared.so` or `libedgevdb.so`
-- macOS: `libedgevdb_shared.dylib` or `libedgevdb.dylib`
-- Windows: `edgevdb_shared.dll` or `edgevdb.dll`
+**Library Layout:**
+```
+python/edgevdb/lib/
+  linux/    → libedgevdb_shared.so
+  darwin/   → libedgevdb_shared.dylib
+  windows/  → edgevdb_shared.dll, libedgevdb_shared.dll
+```
 
 ## Performance Considerations
 
@@ -510,7 +516,7 @@ cmake --preset desktop-release
 cmake --build build/desktop-release
 
 # Install
-cp build/desktop-release/core/libedgevdb_shared.so python/edgevdb/
+cp build/desktop-release/core/libedgevdb_shared.so python/edgevdb/lib/linux/
 pip install -e python/
 ```
 
@@ -522,7 +528,7 @@ cmake --preset desktop-release
 cmake --build build/desktop-release
 
 # Install
-cp build/desktop-release/core/libedgevdb_shared.dylib python/edgevdb/
+cp build/desktop-release/core/libedgevdb_shared.dylib python/edgevdb/lib/darwin/
 pip install -e python/
 ```
 
@@ -534,7 +540,7 @@ cmake --preset desktop-release
 cmake --build build/desktop-release
 
 # Install
-copy build\desktop-release\core\edgevdb_shared.dll python\edgevdb\
+copy build\desktop-release\core\edgevdb_shared.dll python\edgevdb\lib\windows\
 pip install -e python\
 ```
 
@@ -546,7 +552,7 @@ cmake --preset desktop-release
 cmake --build build/desktop-release
 
 # Install
-cp build/desktop-release/core/libedgevdb_shared.so python/edgevdb/
+cp build/desktop-release/core/libedgevdb_shared.so python/edgevdb/lib/linux/
 pip install -e python/
 ```
 
@@ -570,7 +576,7 @@ pytest tests/ -v
 
 **Solution:**
 1. Build the C++ core: `cmake --preset desktop-release && cmake --build build/desktop-release`
-2. Copy the shared library to `python/edgevdb/`
+2. Copy the shared library to `python/edgevdb/lib/<platform>/`
 3. Verify the library name matches your platform
 
 ### Import Errors

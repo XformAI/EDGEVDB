@@ -75,7 +75,8 @@ CombinedResult QueryEngine::query(const CombinedQuery& q, const float* query_emb
                 qr.cosine_score = 1.0f - dist;
                 qr.doc_id = chunk.doc_id;
                 qr.page_number = chunk.page_number;
-                std::strncpy(qr.text, chunk.text, MAX_TEXT_LEN - 1);
+                std::memcpy(qr.text, chunk.text, MAX_TEXT_LEN);
+                qr.text[MAX_TEXT_LEN - 1] = '\0';
                 result.chunks.push_back(qr);
             }
         }
@@ -92,7 +93,8 @@ CombinedResult QueryEngine::query(const CombinedQuery& q, const float* query_emb
                 qr.score = 0.0f; // expansion chunks have no score
                 qr.doc_id = chunk.doc_id;
                 qr.page_number = chunk.page_number;
-                std::strncpy(qr.text, chunk.text, MAX_TEXT_LEN - 1);
+                std::memcpy(qr.text, chunk.text, MAX_TEXT_LEN);
+                qr.text[MAX_TEXT_LEN - 1] = '\0';
                 result.chunks.push_back(qr);
             }
         }

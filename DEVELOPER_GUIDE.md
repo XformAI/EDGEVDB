@@ -282,8 +282,9 @@ int main() {
 # Build the SDK first
 cmake --preset desktop-release && cmake --build build/desktop-release
 
-# Copy .so into the Python package
-cp build/desktop-release/core/libedgevdb_shared.so python/edgevdb/
+# Copy .so into the Python package (platform-specific)
+# Linux:
+cp build/desktop-release/core/libedgevdb_shared.so python/edgevdb/lib/linux/
 
 # Install in development mode
 cd python && pip install -e .
@@ -615,7 +616,7 @@ Then modify `embedder.cpp` to call ORT APIs instead of `generateFallbackEmbeddin
 ./build/desktop-release/tests/bench_build        # Index build throughput
 
 # Python SDK tests (uses unittest; pytest also works if installed)
-cp build/desktop-debug/core/libedgevdb_shared.so python/edgevdb/
+cp build/desktop-debug/core/libedgevdb_shared.so python/edgevdb/lib/linux/
 cd python && python3 -m unittest tests.test_edgevdb -v
 # Or with pytest: cd python && pytest tests/ -v
 
@@ -635,11 +636,11 @@ cd python
 
 # 1. Copy the built shared library into the package (platform-specific)
 # Linux:
-cp ../build/desktop-release/core/libedgevdb_shared.so edgevdb/
+cp ../build/desktop-release/core/libedgevdb_shared.so edgevdb/lib/linux/
 # macOS:
-# cp ../build/desktop-release/core/libedgevdb_shared.dylib edgevdb/
+# cp ../build/desktop-release/core/libedgevdb_shared.dylib edgevdb/lib/darwin/
 # Windows (from PowerShell):
-# copy ..\build\desktop-release\core\edgevdb_shared.dll edgevdb\
+# copy ..\build\desktop-release\core\edgevdb_shared.dll edgevdb\lib\windows\
 
 # 2. Build the wheel
 pip install build

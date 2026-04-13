@@ -272,7 +272,19 @@ EvdbQueryHandle* evdb_query_text(EvdbHandle* h, EvdbEmbedder* e,
     try {
         float query_emb[384];
         if (!e->embedder->embed(query_text, query_emb)) return nullptr;
-        return evdb_query_vector(h, query_emb, query_text, top_k);
+
+        CombinedQuery cq;
+        cq.text_query = query_text;
+        cq.top_k = top_k;
+        cq.token_budget = h->config.token_budget;
+        cq.use_kg_expansion = (use_kg_expansion != 0) && (h->config.enable_knowledge_graph != 0);
+
+        auto combined = h->query_engine->query(cq, query_emb);
+
+        auto qh = new EvdbQueryHandle_();
+        qh->results = combined.chunks;
+        qh->context_string = combined.assembled_context;
+        return qh;
     } catch (...) {
         return nullptr;
     }
@@ -289,6 +301,7 @@ EvdbQueryHandle* evdb_query_vector(EvdbHandle* h,
         cq.text_query = query_text_for_keyword ? query_text_for_keyword : "";
         cq.top_k = top_k;
         cq.token_budget = h->config.token_budget;
+        cq.use_kg_expansion = (h->config.enable_knowledge_graph != 0);
 
         auto combined = h->query_engine->query(cq, query_embedding_384);
 

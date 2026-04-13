@@ -102,7 +102,7 @@ if (!db) {
 
 ### `void evdb_close(EvdbHandle* h)`
 
-Close and free a database handle. **Call `evdb_save()` first** to ensure all data is flushed to disk.
+Close and free a database handle. Automatically calls `evdb_save()` before closing.
 
 **Parameters:**
 - `h`: Database handle
@@ -375,7 +375,7 @@ const char* json = "{\"title\":\"ML Guide\",\"author\":\"Alice\"}";
 EvdbError err = evdb_object_put(db, "Document", json, &obj_id);
 ```
 
-### `EvdbError evdb_object_get(EvdbHandle* h, uint64_t id, char* out_json, size_t size)`
+### `EvdbError evdb_object_get(EvdbHandle* h, uint64_t id, char* out_json, int out_json_size)`
 
 Get object as JSON string.
 
@@ -416,7 +416,7 @@ Soft-delete an object.
 EvdbError err = evdb_object_remove(db, obj_id);
 ```
 
-### `EvdbError evdb_object_query(EvdbHandle* h, const char* type, const char* prop, const char* value, char* out, size_t size, int limit)`
+### `EvdbError evdb_object_query(EvdbHandle* h, const char* type_name, const char* filter_property, const char* filter_value, char* out_json_array, int out_size, int limit)`
 
 Query objects by type and property filter.
 

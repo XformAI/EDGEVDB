@@ -125,7 +125,8 @@ Java_ai_edgevdb_EdgeVDB_nativeInsertText(
 extern "C" JNIEXPORT jlong JNICALL
 Java_ai_edgevdb_EdgeVDB_nativeInsertChunk(
         JNIEnv* env, jclass /*clazz*/, jlong handle,
-        jstring jText, jfloatArray jEmbedding, jstring jMeta)
+        jstring jText, jfloatArray jEmbedding, jstring jMeta,
+        jint docId, jint pageNumber)
 {
     auto h         = reinterpret_cast<EvdbHandle*>(handle);
     std::string text = jstringToStd(env, jText);
@@ -133,7 +134,9 @@ Java_ai_edgevdb_EdgeVDB_nativeInsertChunk(
     auto embedding   = jfloatArrayToVec(env, jEmbedding);
 
     uint64_t chunkId = 0;
-    EvdbError rc = evdb_insert_chunk(h, text.c_str(), embedding.data(), 0, 0, &chunkId);
+    EvdbError rc = evdb_insert_chunk(h, text.c_str(), embedding.data(),
+                                     static_cast<uint32_t>(docId),
+                                     static_cast<uint32_t>(pageNumber), &chunkId);
     if (rc != EVDB_OK) {
         throwJavaException(env, ("evdb_insert_chunk failed: " + std::to_string(rc)).c_str());
         return -1;
@@ -165,12 +168,13 @@ Java_ai_edgevdb_EdgeVDB_nativeQueryText(
 extern "C" JNIEXPORT jstring JNICALL
 Java_ai_edgevdb_EdgeVDB_nativeQueryVector(
         JNIEnv* env, jclass /*clazz*/, jlong handle,
-        jfloatArray jEmbedding, jint topK)
+        jfloatArray jEmbedding, jint topK, jstring jQueryText)
 {
     auto h         = reinterpret_cast<EvdbHandle*>(handle);
     auto embedding = jfloatArrayToVec(env, jEmbedding);
+    std::string queryText = jstringToStd(env, jQueryText);
 
-    EvdbQueryHandle* qh = evdb_query_vector(h, embedding.data(), "", topK);
+    EvdbQueryHandle* qh = evdb_query_vector(h, embedding.data(), queryText.c_str(), topK);
     if (!qh) {
         return env->NewStringUTF("[]");
     }

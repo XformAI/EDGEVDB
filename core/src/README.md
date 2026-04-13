@@ -128,10 +128,13 @@ Page proximity index for hybrid ranking.
 - `getChunksForPage(page_number)` — Get all chunks on a page
 
 **Scoring:**
+```
+page_score = 1.0 / (1.0 + |page_a - page_b|)
+```
 - Same page: 1.0
-- Adjacent pages: 0.8
-- Nearby pages: 0.5
-- Distant pages: 0.1
+- Adjacent pages (diff=1): 0.5
+- diff=2: 0.333
+- Different documents: 0.0
 
 ### Hybrid Ranking
 
@@ -184,16 +187,13 @@ Named Entity Recognition (NER) for knowledge graph construction.
 
 **Implementation:**
 - Rule-based NER with pattern matching
-- Entity types: PERSON, ORGANIZATION, LOCATION, DATE, NUMBER
+- Entity types: PROPER_NOUN, TECHNICAL_TERM
 - Capitalization and pattern heuristics
 - No ML dependencies for zero-dependency requirement
 
 **Entity Types:**
-- **PERSON**: Names (e.g., "John Smith")
-- **ORGANIZATION**: Companies, institutions (e.g., "Google")
-- **LOCATION**: Places (e.g., "New York")
-- **DATE**: Temporal expressions (e.g., "January 2024")
-- **NUMBER**: Numeric values (e.g., "42")
+- **PROPER_NOUN**: Capitalized words not at sentence start, all-caps tokens, multi-word names (e.g., "John Smith", "BERT")
+- **TECHNICAL_TERM**: Domain-specific terms added via `addDomainTerms()` (case-insensitive match)
 
 #### `kg_expander.hpp` / `kg_expander.cpp`
 Multi-hop entity expansion for query enhancement.
@@ -404,7 +404,7 @@ Common data structures and type definitions.
 - `QueryResult` — Query result with scores
 
 **Constants:**
-- `MAX_TEXT_LEN` — Maximum chunk text length (2048 chars)
+- `MAX_TEXT_LEN` — Maximum chunk text length (512 chars)
 - `EMBEDDING_DIM` — Embedding dimensions (384)
 - Magic bytes for file headers
 

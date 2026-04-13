@@ -90,7 +90,7 @@ struct ChunkNode {
     uint64_t id;
     uint32_t doc_id;
     uint32_t page_number;
-    char text[MAX_TEXT_LEN];  // 2048 chars
+    char text[MAX_TEXT_LEN];  // 512 chars
     float embedding[384];      // Optional for rebuild
     uint64_t timestamp;
     uint32_t crc32;
@@ -114,10 +114,14 @@ Page proximity index for hybrid ranking.
 - Support page-aware retrieval
 
 **Scoring:**
+```
+page_score = 1.0 / (1.0 + |page_a - page_b|)
+```
 - Same page: 1.0
-- Adjacent pages: 0.8
-- Nearby pages: 0.5
-- Distant pages: 0.1
+- Adjacent pages (diff=1): 0.5
+- diff=2: 0.333
+- diff=9: 0.1
+- Different documents: 0.0
 
 ### Hybrid Ranker
 
@@ -149,11 +153,9 @@ Entity graph for multi-hop knowledge expansion.
 - **KGExpander**: Multi-hop query expansion
 
 **Entity Types:**
-- PERSON: Names (e.g., "John Smith")
-- ORGANIZATION: Companies, institutions (e.g., "Google")
-- LOCATION: Places (e.g., "New York")
-- DATE: Temporal expressions (e.g., "January 2024")
-- NUMBER: Numeric values (e.g., "42")
+- PROPER_NOUN: Capitalized words not at sentence start, all-caps tokens, multi-word names (e.g., "John Smith", "BERT")
+- TECHNICAL_TERM: Domain-specific terms added via `addDomainTerms()` (case-insensitive match)
+- NGRAM: (reserved for future use)
 
 **Graph Structure:**
 - `entity_to_chunks`: entity → [chunk_ids]
@@ -418,17 +420,6 @@ All stores use `std::shared_mutex` for readers-writer locking:
 | Add entities | O(e) | e = entities per chunk |
 | Get chunks for entity | O(k) | k = chunks with entity |
 | Multi-hop expansion | O(h·d) | h = hops, d = degree |
-
-## Performance Targets
-
-| Metric | Target | Platform |
-|--------|--------|----------|
-| Query latency (10k chunks) | < 100ms | Desktop |
-| Query latency (10k chunks) | < 200ms | Raspberry Pi |
-| Embedding latency | < 50ms | Desktop |
-| Index build (10k chunks) | < 5s | Desktop |
-| Library size (stripped) | < 4 MB | Android arm64 |
-| Memory footprint (10k chunks) | < 100 MB | Desktop |
 
 ## Security Considerations
 

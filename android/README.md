@@ -384,15 +384,6 @@ data class QueryResult(
 - **Acceleration**: NNAPI delegate support
 - **Thread Count**: Configurable (default: 2)
 
-### Performance Targets
-
-| Metric | Target | Platform |
-|--------|--------|----------|
-| Query latency (10k chunks) | < 100ms | Android arm64 |
-| Embedding latency | < 50ms | Android arm64 |
-| Library size (stripped) | < 4 MB | Android arm64 |
-| Memory footprint | < 50 MB | Android arm64 |
-
 ## Building
 
 ### Prerequisites

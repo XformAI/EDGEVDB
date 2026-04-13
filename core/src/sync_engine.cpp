@@ -64,9 +64,53 @@ SyncDelta SyncDelta::deserialize(const std::string& json_str) {
         delta.from_clock = j["from_clock"].get<uint64_t>();
         delta.to_clock = j["to_clock"].get<uint64_t>();
 
-        if (j.contains("records")) {
-            // Simplified deserialization
-            // Full implementation would iterate the array
+        if (j.contains("records") && j["records"].is_array()) {
+            for (size_t i = 0; i < j["records"].size(); i++) {
+                nlohmann::json r = j["records"][i];
+                ObjectRecord rec;
+                rec.id = r["id"].get<uint64_t>();
+                std::string tn = r["type_name"].get<std::string>();
+                std::strncpy(rec.type_name, tn.c_str(), 63);
+                rec.type_name[63] = '\0';
+                std::string data_str = r["data"].get<std::string>();
+                std::memset(rec.data, 0, MAX_OBJECT_DATA);
+                std::memcpy(rec.data, data_str.c_str(),
+                            std::min(data_str.size(), static_cast<size_t>(MAX_OBJECT_DATA - 1)));
+                rec.created_at = r["created_at"].get<uint64_t>();
+                rec.updated_at = r["updated_at"].get<uint64_t>();
+                rec.sync_vector_clock = r["sync_vector_clock"].get<uint64_t>();
+                rec.is_deleted = r["is_deleted"].get<bool>();
+                delta.records.push_back(rec);
+            }
+        }
+
+        if (j.contains("edges") && j["edges"].is_array()) {
+            for (size_t i = 0; i < j["edges"].size(); i++) {
+                nlohmann::json e = j["edges"][i];
+                RelationEdge edge;
+                edge.from_id = e["from_id"].get<uint64_t>();
+                edge.to_id = e["to_id"].get<uint64_t>();
+                std::string rn = e["relation_name"].get<std::string>();
+                std::strncpy(edge.relation_name, rn.c_str(), 63);
+                edge.relation_name[63] = '\0';
+                edge.created_at = e["created_at"].get<uint64_t>();
+                delta.edges.push_back(edge);
+            }
+        }
+
+        if (j.contains("chunks") && j["chunks"].is_array()) {
+            for (size_t i = 0; i < j["chunks"].size(); i++) {
+                nlohmann::json ch = j["chunks"][i];
+                ChunkNode chunk;
+                chunk.id = ch["id"].get<uint64_t>();
+                std::string txt = ch["text"].get<std::string>();
+                std::strncpy(chunk.text, txt.c_str(), MAX_TEXT_LEN - 1);
+                chunk.text[MAX_TEXT_LEN - 1] = '\0';
+                chunk.doc_id = ch["doc_id"].get<uint32_t>();
+                chunk.page_number = ch["page_number"].get<uint32_t>();
+                chunk.insert_timestamp = ch["insert_timestamp"].get<uint64_t>();
+                delta.chunks.push_back(chunk);
+            }
         }
     } catch (...) {
         EVDB_LOG_ERROR("SyncEngine: Failed to deserialize delta");

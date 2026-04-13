@@ -103,7 +103,7 @@ class RagEngine(
 
         val chunks: List<ChunkResult> = if (db != null) {
             Log.d(TAG, "Querying EdgeVDB with topK=$topK")
-            db.queryVector(embedding, topK)
+            db.queryVector(embedding, topK, query)
         } else {
             Log.d(TAG, "Querying SimpleVectorDB with topK=$topK")
             simpleDB!!.query(embedding, topK)

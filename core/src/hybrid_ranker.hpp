@@ -148,7 +148,7 @@ inline std::vector<QueryResult> HybridRanker::rerank(const RankerInput& input) c
         qr.chunk_id = chunk_id;
         qr.doc_id = chunk.doc_id;
         qr.page_number = chunk.page_number;
-        std::strncpy(qr.text, chunk.text, MAX_TEXT_LEN - 1);
+        std::memcpy(qr.text, chunk.text, MAX_TEXT_LEN);
         qr.text[MAX_TEXT_LEN - 1] = '\0';
 
         // Cosine score

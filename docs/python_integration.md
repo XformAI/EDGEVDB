@@ -23,7 +23,7 @@ cmake --build build/desktop-release
 
 ```bash
 # Copy shared library into the Python package
-cp build/desktop-release/core/libedgevdb_shared.so python/edgevdb/
+cp build/desktop-release/core/libedgevdb_shared.so python/edgevdb/lib/linux/
 
 # Install in development mode
 cd python
@@ -43,7 +43,8 @@ export DYLD_LIBRARY_PATH=build/desktop-release/core:$DYLD_LIBRARY_PATH  # macOS
 
 ```bash
 # Copy library to system location
-sudo cp build/desktop-release/core/libedgevdb_shared.so /usr/local/lib/
+sudo cp build/desktop-release/core/libedgevdb_shared.so /usr/local/lib/  # system-wide
+# Or into package: cp build/desktop-release/core/libedgevdb_shared.so python/edgevdb/lib/linux/
 sudo ldconfig  # Linux only
 
 # Install Python package
