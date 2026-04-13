@@ -2,4 +2,4 @@ jdk:
   - openjdk17
 
 install:
-  - cd android && ./gradlew :sdk:publishToMavenLocal
+  - cd android && chmod +x gradlew && ./gradlew :sdk:publishToMavenLocal
