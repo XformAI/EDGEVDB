@@ -38,9 +38,13 @@ jobs:
           mkdir -p python/edgevdb/lib/${{ matrix.platform }}
           find build/desktop-release -name "${{ matrix.lib_name }}" -exec cp {} python/edgevdb/lib/${{ matrix.platform }}/ \;
 
-      - name: Strip (Linux/macOS)
-        if: matrix.platform != 'windows'
+      - name: Strip (Linux)
+        if: matrix.platform == 'linux'
         run: strip python/edgevdb/lib/${{ matrix.platform }}/${{ matrix.lib_name }}
+
+      - name: Strip (macOS)
+        if: matrix.platform == 'darwin'
+        run: strip -x python/edgevdb/lib/${{ matrix.platform }}/${{ matrix.lib_name }}
 
       - uses: actions/upload-artifact@v4
         with:
