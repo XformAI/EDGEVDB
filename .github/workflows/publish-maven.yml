@@ -49,5 +49,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          chmod +x gradlew
           ./gradlew :sdk:publishReleasePublicationToGitHubPackagesRepository \
             -PEDGEVDB_VERSION=${{ steps.version.outputs.version }}
