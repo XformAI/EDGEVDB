@@ -9,7 +9,7 @@
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![Version](https://img.shields.io/badge/version-1.0.3-green.svg)]()
 [![PyPI](https://img.shields.io/pypi/v/edgevdb.svg)](https://pypi.org/project/edgevdb/)
-[![Android](https://img.shields.io/badge/android-JitPack-brightgreen.svg)](https://jitpack.io/#XformAI/EDGEVDB)
+[![Android](https://img.shields.io/badge/android-GitHub%20Packages-brightgreen.svg)](https://github.com/XformAI/EDGEVDB/packages)
 [![C++17](https://img.shields.io/badge/C%2B%2B-17-orange.svg)]()
 [![Platforms](https://img.shields.io/badge/platforms-Android%20%7C%20iOS%20%7C%20Desktop-lightgrey.svg)]()
 [![Docs](https://img.shields.io/badge/docs-edgevdb.xformai.in-6366f1.svg)](https://xformai.github.io/EDGEVDB/)
@@ -161,21 +161,27 @@ with EdgeVDB("./data") as db:
     print("EdgeVDB ready!")
 ```
 
-### Android (JitPack)
+### Android (GitHub Packages)
 
 ```kotlin
-// settings.gradle.kts
+// settings.gradle.kts — add the repository
 repositories {
-    maven { url = uri("https://jitpack.io") }
+    maven {
+        url = uri("https://maven.pkg.github.com/XformAI/EDGEVDB")
+        credentials {
+            username = project.findProperty("gpr.user") as String?
+            password = project.findProperty("gpr.token") as String?
+        }
+    }
 }
 
 // build.gradle.kts
 dependencies {
-    implementation("com.github.XformAI:EDGEVDB:v1.0.3")
+    implementation("in.xformai:edgevdb-android:1.0.3")
 }
 ```
 
-No authentication required.
+> Requires a GitHub personal access token with `read:packages` scope. Add `gpr.user` and `gpr.token` to your `~/.gradle/gradle.properties`.
 
 ### Building from Source
 

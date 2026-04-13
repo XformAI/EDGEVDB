@@ -107,9 +107,6 @@ publishing {
     }
 }
 
-// JitPack uses the GitHub repo directly — no publishing config needed.
-// Users add: implementation("com.github.XformAI:EDGEVDB:v1.0.3")
-
 dependencies {
     // ONNX Runtime — full Android package (includes GPU / NNAPI delegates)
     api(libs.onnxruntime.android)

@@ -654,31 +654,39 @@ pip install edgevdb
 
 **pyproject.toml** is configured at `python/pyproject.toml`.
 
-### 10.2 Android → JitPack
+### 10.2 Android → GitHub Packages
 
-The Android SDK is available via **JitPack**: [jitpack.io/#XformAI/EDGEVDB](https://jitpack.io/#XformAI/EDGEVDB)
+The Android SDK is **published on GitHub Packages**: [github.com/XformAI/EDGEVDB/packages](https://github.com/XformAI/EDGEVDB/packages)
 
-JitPack builds directly from GitHub release tags — no manual publishing step needed. No authentication required for consumers.
+**Automated CI/CD:** Publishing is handled by GitHub Actions (`.github/workflows/publish-maven.yml`). On every tagged release (`v*`), the workflow builds the AAR and publishes to GitHub Packages automatically.
 
 **To release a new version:**
 
-1. Commit and push to `main`
-2. Create a GitHub release with a `v*` tag (e.g. `v1.0.4`)
-3. JitPack builds automatically on first request
+1. Bump `EDGEVDB_VERSION` (passed via `-P` flag in CI, defaults to `1.0.0`)
+2. Commit and push to `main`
+3. Create a GitHub release with a `v*` tag (e.g. `v1.0.4`)
 
 **Users add to their project:**
 
 ```kotlin
 // settings.gradle.kts
 repositories {
-    maven { url = uri("https://jitpack.io") }
+    maven {
+        url = uri("https://maven.pkg.github.com/XformAI/EDGEVDB")
+        credentials {
+            username = project.findProperty("gpr.user") as String?
+            password = project.findProperty("gpr.token") as String?
+        }
+    }
 }
 
 // build.gradle.kts
 dependencies {
-    implementation("com.github.XformAI:EDGEVDB:v1.0.3")
+    implementation("in.xformai:edgevdb-android:1.0.3")
 }
 ```
+
+> Users need a GitHub personal access token with `read:packages` scope.
 
 ### 10.3 C/C++ → System Package / CMake FetchContent
 
