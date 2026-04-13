@@ -19,6 +19,8 @@
 ---
 
 > **Embeddable cross-platform vector database with HNSW ANN, hybrid retrieval, knowledge graph, relational object store, and CRDT-based sync — all in a single zero-dependency C++ library.**
+>
+> **Note:** EdgeVDB is under active development. PyPI and Maven Central packages are not yet published — build from source for now. See [Building](#building).
 
 ## Why EdgeVDB?
 
@@ -84,13 +86,13 @@ with EdgeVDB("./data") as db:
 
 #### Android (Kotlin)
 ```kotlin
-val db = EdgeVDB.open(context)
+val db = EdgeVDB.open(context, dbPath = context.filesDir.resolve("edgevdb").path)
 val embedding: FloatArray = yourProvider.embed("Neural networks classify images")
-val chunkId = db.insertChunk(embedding, "Neural networks classify images", docId = 1, pageNumber = 0)
+val chunk = DocumentChunk(text = "Neural networks classify images", docId = "doc-1", page = 0)
+val chunkId = db.insertChunk(chunk, embedding)
 
-db.queryVector(embedding, "image classification", topK = 5).use { results ->
-    results.toList().forEach { println("${it.score}: ${it.text}") }
-}
+val results = db.queryVector(embedding, topK = 5, queryText = "image classification")
+results.forEach { println("${it.score}: ${it.text}") }
 db.close()
 ```
 
@@ -204,18 +206,6 @@ We welcome contributions! Here's how to get started:
 5. Open a Pull Request
 
 Please read the [Developer Guide](DEVELOPER_GUIDE.md) for coding conventions and build setup.
-
-
-
-## Documentation
-
-- [**Developer Guide**](DEVELOPER_GUIDE.md) — Building, integration, publishing
-- [Architecture](docs/architecture.md) — System design and data flow
-- [API Reference](docs/api_reference.md) — Complete C API documentation
-- [Android Integration](docs/android_integration.md)
-- [iOS Integration](docs/ios_integration.md)
-- [Python Integration](docs/python_integration.md)
-
 
 ## License
 
