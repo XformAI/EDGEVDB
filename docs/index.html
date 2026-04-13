@@ -1,0 +1,1042 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>EdgeVDB — On-Device Vector Database SDK by XformAI</title>
+    <meta name="description" content="EdgeVDB is a zero-dependency, embeddable cross-platform vector database with HNSW ANN, hybrid retrieval, knowledge graph, and CRDT sync — all in a single C++ library. Built by XformAI." />
+    <meta name="keywords" content="EdgeVDB, vector database, HNSW, on-device AI, RAG, XformAI, C++ SDK, Android, iOS, Python, edge computing" />
+    <meta name="author" content="XformAI" />
+    <meta property="og:title" content="EdgeVDB — On-Device Vector Database SDK" />
+    <meta property="og:description" content="Embeddable cross-platform vector database with HNSW ANN, hybrid retrieval, knowledge graph, and CRDT sync." />
+    <meta property="og:type" content="website" />
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+    <!-- ==================== NAVIGATION ==================== -->
+    <nav id="main-nav" class="navbar">
+        <div class="nav-container">
+            <a href="#hero" class="nav-logo" id="nav-logo">
+                <span class="logo-icon">⬡</span>
+                <span class="logo-text">Edge<span class="logo-accent">VDB</span></span>
+                <span class="nav-by">by <strong>XformAI</strong></span>
+            </a>
+            <button class="nav-toggle" id="nav-toggle" aria-label="Toggle navigation">
+                <span></span><span></span><span></span>
+            </button>
+            <ul class="nav-links" id="nav-links">
+                <li><a href="#features">Features</a></li>
+                <li><a href="#architecture">Architecture</a></li>
+                <li><a href="#quickstart">Quick Start</a></li>
+                <li><a href="#api">API</a></li>
+                <li><a href="#benchmarks">Benchmarks</a></li>
+                <li><a href="#platforms">Platforms</a></li>
+                <li><a href="#about-xformai">About</a></li>
+                <li><a href="https://www.xformai.in/" target="_blank" class="nav-xformai" id="nav-xformai-btn">XformAI ↗</a></li>
+                <li><a href="https://github.com/XformAI/EDGEVDB" target="_blank" class="nav-cta" id="nav-github-btn">GitHub ↗</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- ==================== HERO ==================== -->
+    <section id="hero" class="hero">
+        <div class="hero-bg">
+            <div class="hero-glow hero-glow-1"></div>
+            <div class="hero-glow hero-glow-2"></div>
+            <div class="hero-glow hero-glow-3"></div>
+            <canvas id="hero-canvas" class="hero-canvas"></canvas>
+        </div>
+        <div class="hero-content">
+            <div class="hero-badge">
+                <span class="badge-dot"></span>
+                <span>Open Source · Apache 2.0</span>
+            </div>
+            <h1 class="hero-title">
+                On-Device <span class="gradient-text">Vector Database</span>
+                <br />for the Edge
+            </h1>
+            <p class="hero-byline">
+                A product by <a href="https://www.xformai.in/" target="_blank" class="hero-company-link" id="hero-xformai-link">
+                    <span class="company-name-highlight">Xform</span><span class="company-name-accent">AI</span>
+                </a> — Transforming AI for the Real World
+            </p>
+            <p class="hero-subtitle">
+                Embeddable cross-platform vector database with HNSW ANN, hybrid retrieval,
+                knowledge graph, relational object store, and CRDT-based sync —
+                all in a single <strong>zero-dependency C++ library</strong>.
+            </p>
+            <div class="hero-stats">
+                <div class="stat-item" id="stat-latency">
+                    <span class="stat-value">0.99<span class="stat-unit">ms</span></span>
+                    <span class="stat-label">Query Latency</span>
+                </div>
+                <div class="stat-divider"></div>
+                <div class="stat-item" id="stat-recall">
+                    <span class="stat-value">96.8<span class="stat-unit">%</span></span>
+                    <span class="stat-label">Recall@5</span>
+                </div>
+                <div class="stat-divider"></div>
+                <div class="stat-item" id="stat-size">
+                    <span class="stat-value">428<span class="stat-unit">KB</span></span>
+                    <span class="stat-label">Library Size</span>
+                </div>
+                <div class="stat-divider"></div>
+                <div class="stat-item" id="stat-deps">
+                    <span class="stat-value">0</span>
+                    <span class="stat-label">Dependencies</span>
+                </div>
+            </div>
+            <div class="hero-actions">
+                <a href="#quickstart" class="btn btn-primary" id="hero-start-btn">
+                    <span>Get Started</span>
+                    <svg class="btn-arrow" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </a>
+                <a href="https://github.com/XformAI/EDGEVDB" target="_blank" class="btn btn-secondary" id="hero-github-btn">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+                    <span>View on GitHub</span>
+                </a>
+            </div>
+            <div class="hero-install">
+                <div class="install-tab-bar">
+                    <button class="install-tab active" data-lang="python" id="install-tab-python">Python</button>
+                    <button class="install-tab" data-lang="cpp" id="install-tab-cpp">C/C++</button>
+                    <button class="install-tab" data-lang="kotlin" id="install-tab-kotlin">Android</button>
+                    <button class="install-tab" data-lang="swift" id="install-tab-swift">iOS</button>
+                </div>
+                <div class="install-code-wrapper">
+                    <pre class="install-code" id="install-code-python"><code>pip install edgevdb</code></pre>
+                    <pre class="install-code hidden" id="install-code-cpp"><code>cmake --preset desktop-release && cmake --build build/desktop-release</code></pre>
+                    <pre class="install-code hidden" id="install-code-kotlin"><code>implementation("ai.edgevdb:edgevdb-android:1.0.0")</code></pre>
+                    <pre class="install-code hidden" id="install-code-swift"><code>.package(url: "https://github.com/XformAI/EDGEVDB.git", from: "1.0.0")</code></pre>
+                    <button class="copy-btn" id="copy-install-btn" aria-label="Copy to clipboard">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="hero-scroll-hint" id="scroll-hint">
+            <span>Scroll to explore</span>
+            <div class="scroll-arrow">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== FEATURES ==================== -->
+    <section id="features" class="section features-section">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tag">Core Capabilities</span>
+                <h2 class="section-title">Everything you need. <span class="gradient-text">Nothing you don't.</span></h2>
+                <p class="section-desc">A complete on-device RAG stack — from embedding to sync — in under 500 KB.</p>
+            </div>
+            <div class="features-grid">
+                <div class="feature-card feature-card-large" id="feature-hnsw">
+                    <div class="feature-icon-wrap">
+                        <div class="feature-icon">
+                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><circle cx="4" cy="5" r="2"/><circle cx="20" cy="5" r="2"/><circle cx="4" cy="19" r="2"/><circle cx="20" cy="19" r="2"/><line x1="6" y1="6" x2="10" y2="10"/><line x1="14" y1="10" x2="18" y2="6"/><line x1="6" y1="18" x2="10" y2="14"/><line x1="14" y1="14" x2="18" y2="18"/></svg>
+                        </div>
+                    </div>
+                    <h3>HNSW ANN Index</h3>
+                    <p>384-dim float32 vectors with M=16, ef=200/64. Sub-millisecond query latency at 10K vectors with 96.8% recall.</p>
+                    <div class="feature-specs">
+                        <span class="spec">O(log N) query</span>
+                        <span class="spec">NEON / SSE2</span>
+                    </div>
+                </div>
+                <div class="feature-card" id="feature-hybrid">
+                    <div class="feature-icon-wrap">
+                        <div class="feature-icon">
+                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 6h16M4 12h10M4 18h14"/><circle cx="19" cy="12" r="3"/></svg>
+                        </div>
+                    </div>
+                    <h3>Hybrid Retrieval</h3>
+                    <p>α·cosine + β·page proximity + γ·keyword overlap for multi-factor ranking that beats pure vector search.</p>
+                </div>
+                <div class="feature-card" id="feature-kg">
+                    <div class="feature-icon-wrap">
+                        <div class="feature-icon">
+                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="6" cy="6" r="3"/><circle cx="18" cy="6" r="3"/><circle cx="12" cy="18" r="3"/><path d="M8 8l4 8M16 8l-4 8M9 6h6"/></svg>
+                        </div>
+                    </div>
+                    <h3>Knowledge Graph</h3>
+                    <p>On-device NER extracts entities, builds a graph, and multi-hop expansion discovers hidden connections.</p>
+                </div>
+                <div class="feature-card" id="feature-embed">
+                    <div class="feature-icon-wrap">
+                        <div class="feature-icon">
+                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M8 12h8M12 8v8"/></svg>
+                        </div>
+                    </div>
+                    <h3>Embedding Pipeline</h3>
+                    <p>Bring your own embeddings from OpenAI, Cohere, or any provider — or use the optional built-in ONNX embedder.</p>
+                </div>
+                <div class="feature-card" id="feature-store">
+                    <div class="feature-icon-wrap">
+                        <div class="feature-icon">
+                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5"/><path d="M3 12c0 1.66 4.03 3 9 3s9-1.34 9-3"/></svg>
+                        </div>
+                    </div>
+                    <h3>Object Store + Relations</h3>
+                    <p>Schema-less NoSQL with typed property indexing. Add foreign-key edges between objects for a rich data graph.</p>
+                </div>
+                <div class="feature-card" id="feature-sync">
+                    <div class="feature-icon-wrap">
+                        <div class="feature-icon">
+                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7 16V4m0 0L3 8m4-4l4 4M17 8v12m0 0l4-4m-4 4l-4-4"/></svg>
+                        </div>
+                    </div>
+                    <h3>CRDT Sync</h3>
+                    <p>Last-Writer-Wins vector clock sync engine for seamless multi-device replication with automatic conflict resolution.</p>
+                </div>
+                <div class="feature-card" id="feature-api">
+                    <div class="feature-icon-wrap">
+                        <div class="feature-icon">
+                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M16 18l6-6-6-6M8 6l-6 6 6 6"/></svg>
+                        </div>
+                    </div>
+                    <h3>Stable C API</h3>
+                    <p><code>vectordb.h</code> — single header, ABI-stable. One include, one link. Works with any FFI binding.</p>
+                </div>
+                <div class="feature-card" id="feature-zero">
+                    <div class="feature-icon-wrap">
+                        <div class="feature-icon">
+                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+                        </div>
+                    </div>
+                    <h3>Zero Dependencies</h3>
+                    <p>Pure C++17 — no external libraries required. ONNX Runtime is optional. Core works everywhere.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== ARCHITECTURE ==================== -->
+    <section id="architecture" class="section architecture-section">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tag">System Design</span>
+                <h2 class="section-title">Built from the ground up for <span class="gradient-text">the edge</span></h2>
+                <p class="section-desc">A layered architecture that separates concerns cleanly — platform SDKs on top, the C++ core underneath.</p>
+            </div>
+            <div class="arch-diagram" id="arch-diagram">
+                <div class="arch-layer arch-sdk-layer">
+                    <div class="arch-layer-label">Platform SDKs</div>
+                    <div class="arch-blocks">
+                        <div class="arch-block arch-python" data-tooltip="ctypes FFI binding">
+                            <span class="arch-icon">🐍</span>
+                            <span>Python SDK</span>
+                            <span class="arch-sub">ctypes</span>
+                        </div>
+                        <div class="arch-block arch-android" data-tooltip="JNI + Kotlin wrapper">
+                            <span class="arch-icon">🤖</span>
+                            <span>Android SDK</span>
+                            <span class="arch-sub">JNI / Kotlin</span>
+                        </div>
+                        <div class="arch-block arch-c" data-tooltip="Stable ABI-compatible C header">
+                            <span class="arch-icon">⚙️</span>
+                            <span>C API</span>
+                            <span class="arch-sub">vectordb.h</span>
+                        </div>
+                        <div class="arch-block arch-ios" data-tooltip="Swift wrapper with C bridge">
+                            <span class="arch-icon">🍎</span>
+                            <span>iOS SDK</span>
+                            <span class="arch-sub">Swift</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="arch-connector">
+                    <svg width="100%" height="30" viewBox="0 0 800 30" preserveAspectRatio="none"><path d="M0,0 L400,30 L800,0" fill="none" stroke="url(#connGrad)" stroke-width="2"/><defs><linearGradient id="connGrad" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="rgba(99,102,241,0.1)"/><stop offset="50%" stop-color="rgba(99,102,241,0.5)"/><stop offset="100%" stop-color="rgba(99,102,241,0.1)"/></linearGradient></defs></svg>
+                </div>
+                <div class="arch-layer arch-core-layer">
+                    <div class="arch-layer-label">C++ Core Library</div>
+                    <div class="arch-blocks arch-core-blocks">
+                        <div class="arch-block arch-core-block" data-tooltip="Hierarchical Navigable Small World graph index with NEON/SSE2 SIMD">
+                            <span>HNSW Index</span>
+                        </div>
+                        <div class="arch-block arch-core-block" data-tooltip="Persistent text chunk storage with CRC32 integrity checks">
+                            <span>Chunk Store</span>
+                        </div>
+                        <div class="arch-block arch-core-block" data-tooltip="Schema-less NoSQL document store with property indexing">
+                            <span>Object Store</span>
+                        </div>
+                        <div class="arch-block arch-core-block" data-tooltip="Entity graph with multi-hop expansion for knowledge discovery">
+                            <span>KG Engine</span>
+                        </div>
+                        <div class="arch-block arch-core-block" data-tooltip="α·cosine + β·page + γ·keyword multi-factor ranking">
+                            <span>Hybrid Ranker</span>
+                        </div>
+                        <div class="arch-block arch-core-block" data-tooltip="CRDT-based Last-Writer-Wins sync with vector clocks">
+                            <span>Sync Engine</span>
+                        </div>
+                        <div class="arch-block arch-core-block" data-tooltip="Token budget management for LLM context assembly">
+                            <span>Token Budget</span>
+                        </div>
+                        <div class="arch-block arch-core-block" data-tooltip="Optional ONNX Runtime or hash-based fallback embedder">
+                            <span>Embedder</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="arch-flow">
+                <h3>Query Pipeline</h3>
+                <div class="flow-steps">
+                    <div class="flow-step">
+                        <div class="flow-num">1</div>
+                        <div class="flow-content">
+                            <h4>Embed</h4>
+                            <p>Text → 384-dim vector (ONNX or pre-computed)</p>
+                        </div>
+                    </div>
+                    <div class="flow-arrow">→</div>
+                    <div class="flow-step">
+                        <div class="flow-num">2</div>
+                        <div class="flow-content">
+                            <h4>HNSW Search</h4>
+                            <p>ANN k-NN with 3× overfetch</p>
+                        </div>
+                    </div>
+                    <div class="flow-arrow">→</div>
+                    <div class="flow-step">
+                        <div class="flow-num">3</div>
+                        <div class="flow-content">
+                            <h4>Hybrid Re-rank</h4>
+                            <p>α·cosine + β·page + γ·keyword</p>
+                        </div>
+                    </div>
+                    <div class="flow-arrow">→</div>
+                    <div class="flow-step">
+                        <div class="flow-num">4</div>
+                        <div class="flow-content">
+                            <h4>KG Expand</h4>
+                            <p>Multi-hop entity graph traversal</p>
+                        </div>
+                    </div>
+                    <div class="flow-arrow">→</div>
+                    <div class="flow-step">
+                        <div class="flow-num">5</div>
+                        <div class="flow-content">
+                            <h4>Token Budget</h4>
+                            <p>Assemble RAG context for LLM</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== QUICK START ==================== -->
+    <section id="quickstart" class="section quickstart-section">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tag">Get Started</span>
+                <h2 class="section-title">Up and running in <span class="gradient-text">minutes</span></h2>
+                <p class="section-desc">Choose your platform. Bring your own embeddings or use the built-in embedder.</p>
+            </div>
+            <div class="code-tabs" id="quickstart-tabs">
+                <div class="tabs-bar">
+                    <button class="tab active" data-target="qs-python" id="qs-tab-python">
+                        <span class="tab-icon">🐍</span> Python
+                    </button>
+                    <button class="tab" data-target="qs-kotlin" id="qs-tab-kotlin">
+                        <span class="tab-icon">🤖</span> Android
+                    </button>
+                    <button class="tab" data-target="qs-swift" id="qs-tab-swift">
+                        <span class="tab-icon">🍎</span> iOS
+                    </button>
+                    <button class="tab" data-target="qs-c" id="qs-tab-c">
+                        <span class="tab-icon">⚙️</span> C API
+                    </button>
+                </div>
+                <div class="tabs-content">
+                    <div class="tab-panel active" id="qs-python">
+                        <div class="code-block">
+                            <div class="code-header">
+                                <span class="code-lang">Python — No ONNX Required</span>
+                                <button class="copy-btn" data-target="qs-python-code" aria-label="Copy code">Copy</button>
+                            </div>
+                            <pre id="qs-python-code"><code class="language-python"><span class="kw">from</span> edgevdb <span class="kw">import</span> EdgeVDB
+
+<span class="cm"># Open database</span>
+<span class="kw">with</span> EdgeVDB(<span class="str">"./data"</span>) <span class="kw">as</span> db:
+    <span class="cm"># Use embeddings from ANY provider</span>
+    embedding = your_provider.embed(<span class="str">"Neural networks classify images"</span>)
+    chunk_id = db.insert_chunk(
+        <span class="str">"Neural networks classify images"</span>,
+        embedding, doc_id=<span class="num">1</span>, page_number=<span class="num">0</span>
+    )
+
+    <span class="cm"># Query</span>
+    query_emb = your_provider.embed(<span class="str">"image classification"</span>)
+    results = db.query_vector(query_emb, query_text=<span class="str">"image classification"</span>, top_k=<span class="num">5</span>)
+
+    <span class="kw">for</span> r <span class="kw">in</span> results:
+        <span class="fn">print</span>(<span class="str">f"  [<span class="esc">{r.score:.3f}</span>] <span class="esc">{r.text}</span>"</span>)
+    results.free()</code></pre>
+                        </div>
+                    </div>
+                    <div class="tab-panel" id="qs-kotlin">
+                        <div class="code-block">
+                            <div class="code-header">
+                                <span class="code-lang">Kotlin — Android</span>
+                                <button class="copy-btn" data-target="qs-kotlin-code" aria-label="Copy code">Copy</button>
+                            </div>
+                            <pre id="qs-kotlin-code"><code class="language-kotlin"><span class="kw">val</span> db = EdgeVDB.open(context)
+<span class="kw">val</span> embedding: FloatArray = yourProvider.embed(<span class="str">"Neural networks classify images"</span>)
+<span class="kw">val</span> chunkId = db.insertChunk(
+    embedding, <span class="str">"Neural networks classify images"</span>, docId = <span class="num">1</span>, pageNumber = <span class="num">0</span>
+)
+
+<span class="cm">// QueryResults is AutoCloseable — use .use{} to avoid handle leaks</span>
+db.queryVector(embedding, <span class="str">"image classification"</span>, topK = <span class="num">5</span>).use { results ->
+    results.toList().forEach { <span class="fn">println</span>(<span class="str">"${it.score}: ${it.text}"</span>) }
+}
+db.close()</code></pre>
+                        </div>
+                    </div>
+                    <div class="tab-panel" id="qs-swift">
+                        <div class="code-block">
+                            <div class="code-header">
+                                <span class="code-lang">Swift — iOS</span>
+                                <button class="copy-btn" data-target="qs-swift-code" aria-label="Copy code">Copy</button>
+                            </div>
+                            <pre id="qs-swift-code"><code class="language-swift"><span class="kw">let</span> db = <span class="kw">try</span> EdgeVDB(storageDir: storageDir)
+<span class="kw">let</span> embedding: [Float] = yourProvider.embed(<span class="str">"Neural networks classify images"</span>)
+<span class="kw">let</span> chunkId = <span class="kw">try</span> db.insertChunk(
+    text: <span class="str">"Neural networks classify images"</span>,
+    embedding: embedding, docId: <span class="num">1</span>, page: <span class="num">0</span>
+)
+
+<span class="kw">let</span> results = <span class="kw">try</span> db.queryVector(
+    embedding: embedding, queryText: <span class="str">"image classification"</span>, topK: <span class="num">5</span>
+)
+<span class="kw">defer</span> { results.close() }
+<span class="kw">for</span> r <span class="kw">in</span> results.toArray() {
+    <span class="fn">print</span>(<span class="str">"\\(r.score): \\(r.text)"</span>)
+}</code></pre>
+                        </div>
+                    </div>
+                    <div class="tab-panel" id="qs-c">
+                        <div class="code-block">
+                            <div class="code-header">
+                                <span class="code-lang">C — Stable API</span>
+                                <button class="copy-btn" data-target="qs-c-code" aria-label="Copy code">Copy</button>
+                            </div>
+                            <pre id="qs-c-code"><code class="language-c"><span class="pp">#include</span> <span class="str">"edgevdb/vectordb.h"</span>
+
+EvdbConfig config;
+evdb_default_config(&config);
+config.storage_dir = <span class="str">"./data"</span>;
+
+EvdbHandle* db = evdb_open(&config);
+
+<span class="kw">float</span> embedding[<span class="num">384</span>] = { <span class="cm">/* from your provider */</span> };
+uint64_t chunk_id;
+evdb_insert_chunk(db, <span class="str">"Hello world"</span>, embedding, <span class="num">1</span>, <span class="num">0</span>, &chunk_id);
+
+EvdbQueryHandle* q = evdb_query_vector(db, embedding, <span class="str">"hello"</span>, <span class="num">5</span>);
+<span class="fn">printf</span>(<span class="str">"Top: %s (%.3f)\\n"</span>, evdb_result_text(q, <span class="num">0</span>), evdb_result_score(q, <span class="num">0</span>));
+evdb_query_free(q);
+evdb_close(db);</code></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== API REFERENCE ==================== -->
+    <section id="api" class="section api-section">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tag">API Reference</span>
+                <h2 class="section-title">A small, <span class="gradient-text">powerful</span> surface</h2>
+                <p class="section-desc">The entire C API fits in a single header. Every function is documented.</p>
+            </div>
+            <div class="api-grid">
+                <div class="api-group" id="api-lifecycle">
+                    <h3 class="api-group-title">
+                        <span class="api-group-icon">🔄</span> Lifecycle
+                    </h3>
+                    <div class="api-items">
+                        <div class="api-item">
+                            <code class="api-sig">evdb_default_config(EvdbConfig* out)</code>
+                            <p>Fill config with defaults</p>
+                        </div>
+                        <div class="api-item">
+                            <code class="api-sig">evdb_open(const EvdbConfig* config) → EvdbHandle*</code>
+                            <p>Open or create a database</p>
+                        </div>
+                        <div class="api-item">
+                            <code class="api-sig">evdb_save(EvdbHandle* h) → EvdbError</code>
+                            <p>Flush all data to disk</p>
+                        </div>
+                        <div class="api-item">
+                            <code class="api-sig">evdb_close(EvdbHandle* h)</code>
+                            <p>Close and free handle</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="api-group" id="api-insert">
+                    <h3 class="api-group-title">
+                        <span class="api-group-icon">📥</span> Insert
+                    </h3>
+                    <div class="api-items">
+                        <div class="api-item">
+                            <code class="api-sig">evdb_insert_text(h, embedder, text, doc_id, page, &id)</code>
+                            <p>Auto-embed and insert</p>
+                        </div>
+                        <div class="api-item">
+                            <code class="api-sig">evdb_insert_chunk(h, text, emb384, doc_id, page, &id)</code>
+                            <p>Insert with pre-computed embedding</p>
+                        </div>
+                        <div class="api-item">
+                            <code class="api-sig">evdb_remove_chunk(h, chunk_id)</code>
+                            <p>Remove a chunk by ID</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="api-group" id="api-query">
+                    <h3 class="api-group-title">
+                        <span class="api-group-icon">🔍</span> Query
+                    </h3>
+                    <div class="api-items">
+                        <div class="api-item">
+                            <code class="api-sig">evdb_query_text(h, embedder, query, topk, kg) → QueryHandle*</code>
+                            <p>Auto-embed query</p>
+                        </div>
+                        <div class="api-item">
+                            <code class="api-sig">evdb_query_vector(h, emb384, text, topk) → QueryHandle*</code>
+                            <p>Query with pre-computed vector</p>
+                        </div>
+                        <div class="api-item">
+                            <code class="api-sig">evdb_result_count / text / score / chunk_id / page</code>
+                            <p>Result accessors</p>
+                        </div>
+                        <div class="api-item">
+                            <code class="api-sig">evdb_query_free(q)</code>
+                            <p>Free result handle</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="api-group" id="api-objects">
+                    <h3 class="api-group-title">
+                        <span class="api-group-icon">📦</span> Objects & Relations
+                    </h3>
+                    <div class="api-items">
+                        <div class="api-item">
+                            <code class="api-sig">evdb_object_put(h, type, json, &id)</code>
+                            <p>Insert/update object</p>
+                        </div>
+                        <div class="api-item">
+                            <code class="api-sig">evdb_object_get(h, id, out_json, size)</code>
+                            <p>Get object as JSON</p>
+                        </div>
+                        <div class="api-item">
+                            <code class="api-sig">evdb_relation_add(h, name, from, to)</code>
+                            <p>Add typed directional edge</p>
+                        </div>
+                        <div class="api-item">
+                            <code class="api-sig">evdb_relation_get_targets(h, name, from, ids, &count)</code>
+                            <p>Get relation targets</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="api-group" id="api-sync">
+                    <h3 class="api-group-title">
+                        <span class="api-group-icon">🔁</span> Sync
+                    </h3>
+                    <div class="api-items">
+                        <div class="api-item">
+                            <code class="api-sig">evdb_sync_create(h, device_id) → SyncEngine*</code>
+                            <p>Create sync engine</p>
+                        </div>
+                        <div class="api-item">
+                            <code class="api-sig">evdb_sync_export_delta(s, since, out, size)</code>
+                            <p>Export changes since clock</p>
+                        </div>
+                        <div class="api-item">
+                            <code class="api-sig">evdb_sync_apply_delta(s, json, &applied, &skipped)</code>
+                            <p>Apply received delta</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="api-group" id="api-config">
+                    <h3 class="api-group-title">
+                        <span class="api-group-icon">⚙️</span> Configuration
+                    </h3>
+                    <div class="api-items config-table">
+                        <div class="config-row">
+                            <code>hnsw_M</code><span>16</span><span>Max connections/node</span>
+                        </div>
+                        <div class="config-row">
+                            <code>hnsw_ef_construction</code><span>200</span><span>Build search width</span>
+                        </div>
+                        <div class="config-row">
+                            <code>hnsw_ef_search</code><span>64</span><span>Query search width</span>
+                        </div>
+                        <div class="config-row">
+                            <code>ranker_alpha</code><span>0.70</span><span>Cosine weight</span>
+                        </div>
+                        <div class="config-row">
+                            <code>ranker_beta</code><span>0.20</span><span>Page proximity weight</span>
+                        </div>
+                        <div class="config-row">
+                            <code>ranker_gamma</code><span>0.10</span><span>Keyword weight</span>
+                        </div>
+                        <div class="config-row">
+                            <code>token_budget</code><span>3200</span><span>Max RAG tokens</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== BENCHMARKS ==================== -->
+    <section id="benchmarks" class="section benchmarks-section">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tag">Performance</span>
+                <h2 class="section-title">Real numbers. <span class="gradient-text">No asterisks.</span></h2>
+                <p class="section-desc">All benchmarks are measured on real hardware — Intel i7-1165G7, 16 GB DDR4, Windows 11.</p>
+            </div>
+            <div class="bench-cards">
+                <div class="bench-card" id="bench-query">
+                    <div class="bench-card-header">
+                        <h3>Query Latency</h3>
+                        <span class="bench-subtitle">10K chunks · 384-dim · top-5</span>
+                    </div>
+                    <div class="bench-bars">
+                        <div class="bench-bar-row">
+                            <span class="bench-label">EdgeVDB (C++)</span>
+                            <div class="bench-bar-track">
+                                <div class="bench-bar bench-bar-hero" style="--bar-width: 2%" data-value="0.99 ms"></div>
+                            </div>
+                            <span class="bench-value">0.99 ms</span>
+                        </div>
+                        <div class="bench-bar-row">
+                            <span class="bench-label">EdgeVDB (Python)</span>
+                            <div class="bench-bar-track">
+                                <div class="bench-bar bench-bar-accent" style="--bar-width: 15%" data-value="7.74 ms"></div>
+                            </div>
+                            <span class="bench-value">7.74 ms</span>
+                        </div>
+                        <div class="bench-bar-row">
+                            <span class="bench-label">Qdrant</span>
+                            <div class="bench-bar-track">
+                                <div class="bench-bar bench-bar-muted" style="--bar-width: 10%" data-value="~2-5 ms"></div>
+                            </div>
+                            <span class="bench-value">~2-5 ms</span>
+                        </div>
+                        <div class="bench-bar-row">
+                            <span class="bench-label">Chroma</span>
+                            <div class="bench-bar-track">
+                                <div class="bench-bar bench-bar-muted" style="--bar-width: 30%" data-value="~5-15 ms"></div>
+                            </div>
+                            <span class="bench-value">~5-15 ms</span>
+                        </div>
+                        <div class="bench-bar-row">
+                            <span class="bench-label">Pinecone</span>
+                            <div class="bench-bar-track">
+                                <div class="bench-bar bench-bar-muted" style="--bar-width: 100%" data-value="~20-50 ms"></div>
+                            </div>
+                            <span class="bench-value">~20-50 ms</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="bench-card" id="bench-throughput">
+                    <div class="bench-card-header">
+                        <h3>Insert Throughput</h3>
+                        <span class="bench-subtitle">C++ Native · 384-dim embeddings</span>
+                    </div>
+                    <div class="bench-table">
+                        <div class="bench-table-header">
+                            <span>Chunks</span><span>Time</span><span>Throughput</span>
+                        </div>
+                        <div class="bench-table-row">
+                            <span>100</span><span>9.1 ms</span><span class="highlight">10,931/s</span>
+                        </div>
+                        <div class="bench-table-row">
+                            <span>1,000</span><span>242 ms</span><span class="highlight">4,128/s</span>
+                        </div>
+                        <div class="bench-table-row">
+                            <span>5,000</span><span>2,877 ms</span><span class="highlight">1,738/s</span>
+                        </div>
+                        <div class="bench-table-row">
+                            <span>10,000</span><span>9,495 ms</span><span class="highlight">1,053/s</span>
+                        </div>
+                        <div class="bench-table-row">
+                            <span>15,000</span><span>18,941 ms</span><span class="highlight">792/s</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="bench-card" id="bench-size">
+                    <div class="bench-card-header">
+                        <h3>Library Size</h3>
+                        <span class="bench-subtitle">Stripped binaries</span>
+                    </div>
+                    <div class="size-chart">
+                        <div class="size-item">
+                            <div class="size-bar-container">
+                                <div class="size-bar" style="--size-height: 15%">
+                                    <span class="size-val">428 KB</span>
+                                </div>
+                            </div>
+                            <span class="size-label">EdgeVDB<br/>Desktop</span>
+                        </div>
+                        <div class="size-item">
+                            <div class="size-bar-container">
+                                <div class="size-bar size-bar-accent" style="--size-height: 8%">
+                                    <span class="size-val">241 KB</span>
+                                </div>
+                            </div>
+                            <span class="size-label">EdgeVDB<br/>Android</span>
+                        </div>
+                        <div class="size-item">
+                            <div class="size-bar-container">
+                                <div class="size-bar size-bar-muted" style="--size-height: 35%">
+                                    <span class="size-val">~5 MB</span>
+                                </div>
+                            </div>
+                            <span class="size-label">FAISS</span>
+                        </div>
+                        <div class="size-item">
+                            <div class="size-bar-container">
+                                <div class="size-bar size-bar-muted" style="--size-height: 65%">
+                                    <span class="size-val">~30 MB</span>
+                                </div>
+                            </div>
+                            <span class="size-label">Qdrant</span>
+                        </div>
+                        <div class="size-item">
+                            <div class="size-bar-container">
+                                <div class="size-bar size-bar-muted" style="--size-height: 90%">
+                                    <span class="size-val">~50 MB</span>
+                                </div>
+                            </div>
+                            <span class="size-label">Chroma</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="bench-comparison" id="bench-comparison">
+                <h3>Competitive Advantage Matrix</h3>
+                <div class="comparison-table-wrap">
+                    <table class="comparison-table">
+                        <thead>
+                            <tr>
+                                <th>Capability</th>
+                                <th class="highlight-col">EdgeVDB</th>
+                                <th>Chroma</th>
+                                <th>Qdrant</th>
+                                <th>FAISS</th>
+                                <th>Pinecone</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Sub-ms query</td>
+                                <td class="highlight-col"><span class="check">✓</span></td>
+                                <td><span class="cross">✗</span></td>
+                                <td><span class="cross">✗</span></td>
+                                <td><span class="check">✓</span></td>
+                                <td><span class="cross">✗</span></td>
+                            </tr>
+                            <tr>
+                                <td>Hybrid re-ranking</td>
+                                <td class="highlight-col"><span class="check">Built-in</span></td>
+                                <td>Plugin</td>
+                                <td>Filter</td>
+                                <td><span class="cross">✗</span></td>
+                                <td>Server</td>
+                            </tr>
+                            <tr>
+                                <td>Knowledge graph</td>
+                                <td class="highlight-col"><span class="check">Built-in</span></td>
+                                <td><span class="cross">✗</span></td>
+                                <td><span class="cross">✗</span></td>
+                                <td><span class="cross">✗</span></td>
+                                <td><span class="cross">✗</span></td>
+                            </tr>
+                            <tr>
+                                <td>CRDT sync</td>
+                                <td class="highlight-col"><span class="check">Built-in</span></td>
+                                <td><span class="cross">✗</span></td>
+                                <td>Raft</td>
+                                <td><span class="cross">✗</span></td>
+                                <td>Cloud</td>
+                            </tr>
+                            <tr>
+                                <td>Mobile native SDK</td>
+                                <td class="highlight-col"><span class="check">✓</span></td>
+                                <td><span class="cross">✗</span></td>
+                                <td><span class="cross">✗</span></td>
+                                <td><span class="cross">✗</span></td>
+                                <td>REST</td>
+                            </tr>
+                            <tr>
+                                <td>Zero deps</td>
+                                <td class="highlight-col"><span class="check">✓</span></td>
+                                <td><span class="cross">✗</span></td>
+                                <td><span class="cross">✗</span></td>
+                                <td><span class="cross">✗</span></td>
+                                <td>N/A</td>
+                            </tr>
+                            <tr>
+                                <td>In-process</td>
+                                <td class="highlight-col"><span class="check">✓</span></td>
+                                <td><span class="check">✓</span></td>
+                                <td><span class="cross">✗</span></td>
+                                <td><span class="check">✓</span></td>
+                                <td><span class="cross">✗</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== PLATFORMS ==================== -->
+    <section id="platforms" class="section platforms-section">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tag">Cross-Platform</span>
+                <h2 class="section-title">One codebase. <span class="gradient-text">Every platform.</span></h2>
+                <p class="section-desc">Build once in C++17, deploy everywhere — from Raspberry Pi to flagship phones.</p>
+            </div>
+            <div class="platform-cards">
+                <div class="platform-card" id="platform-android">
+                    <div class="platform-icon">🤖</div>
+                    <h3>Android</h3>
+                    <p>Kotlin SDK with JNI bridge. AAR distribution via Maven Central.</p>
+                    <div class="platform-specs">
+                        <span>arm64-v8a</span>
+                        <span>x86_64</span>
+                        <span>NDK r25+</span>
+                    </div>
+                    <span class="platform-size">241 KB native lib</span>
+                </div>
+                <div class="platform-card" id="platform-ios">
+                    <div class="platform-icon">🍎</div>
+                    <h3>iOS</h3>
+                    <p>Swift SDK with C bridging header. SPM and CocoaPods support.</p>
+                    <div class="platform-specs">
+                        <span>arm64</span>
+                        <span>Simulator</span>
+                        <span>Xcode 14+</span>
+                    </div>
+                    <span class="platform-size">XCFramework</span>
+                </div>
+                <div class="platform-card" id="platform-python">
+                    <div class="platform-icon">🐍</div>
+                    <h3>Python</h3>
+                    <p>Zero-install ctypes binding. PyPI package available.</p>
+                    <div class="platform-specs">
+                        <span>Python 3.8+</span>
+                        <span>Linux</span>
+                        <span>macOS</span>
+                        <span>Windows</span>
+                    </div>
+                    <span class="platform-size">pip install edgevdb</span>
+                </div>
+                <div class="platform-card" id="platform-desktop">
+                    <div class="platform-icon">🖥️</div>
+                    <h3>Desktop / IoT</h3>
+                    <p>Static or shared library. CMake FetchContent integration.</p>
+                    <div class="platform-specs">
+                        <span>Linux</span>
+                        <span>macOS</span>
+                        <span>Windows</span>
+                        <span>RPi</span>
+                    </div>
+                    <span class="platform-size">428 KB stripped</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== BUILDING ==================== -->
+    <section id="building" class="section building-section">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tag">Build Guide</span>
+                <h2 class="section-title">Simple <span class="gradient-text">CMake presets</span></h2>
+                <p class="section-desc">One command to build. Tested presets for every target.</p>
+            </div>
+            <div class="build-grid">
+                <div class="build-card" id="build-desktop">
+                    <h3>🖥️ Desktop</h3>
+                    <div class="code-block code-small">
+                        <pre><code><span class="cm"># Debug (with tests)</span>
+cmake --preset desktop-debug
+cmake --build build/desktop-debug
+
+<span class="cm"># Release (with benchmarks)</span>
+cmake --preset desktop-release
+cmake --build build/desktop-release</code></pre>
+                    </div>
+                </div>
+                <div class="build-card" id="build-android">
+                    <h3>🤖 Android</h3>
+                    <div class="code-block code-small">
+                        <pre><code><span class="kw">export</span> ANDROID_NDK=<span class="str">"/path/to/ndk"</span>
+
+<span class="cm"># ARM64 (physical devices)</span>
+cmake --preset android-arm64
+cmake --build build/android-arm64
+
+<span class="cm"># x86_64 (emulators)</span>
+cmake --preset android-x86_64
+cmake --build build/android-x86_64</code></pre>
+                    </div>
+                </div>
+                <div class="build-card" id="build-tests">
+                    <h3>🧪 Tests</h3>
+                    <div class="code-block code-small">
+                        <pre><code><span class="cm"># Run all C++ tests</span>
+./build/desktop-debug/tests/test_hnsw
+./build/desktop-debug/tests/test_hybrid_ranker
+./build/desktop-debug/tests/test_embedder
+./build/desktop-debug/tests/test_object_store
+./build/desktop-debug/tests/test_sync
+./build/desktop-debug/tests/test_e2e_rag</code></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== ABOUT XFORMAI ==================== -->
+    <section id="about-xformai" class="section about-section">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tag">The Company</span>
+                <h2 class="section-title">Built by <span class="gradient-text">XformAI</span></h2>
+                <p class="section-desc">Transforming AI for the real world — making intelligent systems run anywhere, on any device.</p>
+            </div>
+            <div class="about-card" id="about-card">
+                <div class="about-content">
+                    <div class="about-logo-section">
+                        <div class="about-logo-mark">
+                            <span class="about-logo-x">X</span><span class="about-logo-form">form</span><span class="about-logo-ai">AI</span>
+                        </div>
+                        <a href="https://www.xformai.in/" target="_blank" class="about-website-link" id="about-visit-btn">
+                            Visit xformai.in →
+                        </a>
+                    </div>
+                    <div class="about-details">
+                        <h3>Edge Intelligence, Redefined</h3>
+                        <p>XformAI is an AI technology company focused on building on-device intelligence infrastructure. We believe the future of AI is not in the cloud — it's on the edge, running locally, privately, and instantly on the devices people use every day.</p>
+                        <p>EdgeVDB is our flagship open-source SDK — a zero-dependency vector database purpose-built for mobile, desktop, and IoT devices. From smartphones to Raspberry Pi, our technology powers private, offline-first AI experiences without compromising on performance.</p>
+                        <div class="about-highlights">
+                            <div class="about-highlight-item">
+                                <div class="about-highlight-icon">🔒</div>
+                                <div>
+                                    <strong>Privacy First</strong>
+                                    <p>All data stays on-device. No cloud. No telemetry. No API keys required.</p>
+                                </div>
+                            </div>
+                            <div class="about-highlight-item">
+                                <div class="about-highlight-icon">⚡</div>
+                                <div>
+                                    <strong>Performance Obsessed</strong>
+                                    <p>Sub-millisecond queries. 428 KB footprint. SIMD-optimized for ARM & x86.</p>
+                                </div>
+                            </div>
+                            <div class="about-highlight-item">
+                                <div class="about-highlight-icon">🌍</div>
+                                <div>
+                                    <strong>Truly Cross-Platform</strong>
+                                    <p>One C++ core, native SDKs for Android, iOS, Python, and Desktop.</p>
+                                </div>
+                            </div>
+                            <div class="about-highlight-item">
+                                <div class="about-highlight-icon">🤝</div>
+                                <div>
+                                    <strong>Open Source</strong>
+                                    <p>Apache 2.0 licensed. Build with us, contribute, and shape the future of edge AI.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="about-cta-row">
+                    <a href="https://www.xformai.in/" target="_blank" class="btn btn-primary" id="about-cta-website">
+                        <span>Explore XformAI</span>
+                        <svg class="btn-arrow" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </a>
+                    <a href="https://github.com/XformAI/EDGEVDB" target="_blank" class="btn btn-secondary" id="about-cta-github">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+                        <span>Star on GitHub</span>
+                    </a>
+                    <a href="https://github.com/XformAI/EDGEVDB/issues" target="_blank" class="btn btn-secondary" id="about-cta-contribute">
+                        <span>Contribute</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== FOOTER ==================== -->
+    <footer id="footer" class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-brand">
+                    <a href="#hero" class="footer-logo">
+                        <span class="logo-icon">⬡</span>
+                        <span class="logo-text">Edge<span class="logo-accent">VDB</span></span>
+                    </a>
+                    <p class="footer-tagline">On-device vector database for the edge. Built by <a href="https://www.xformai.in/" target="_blank" class="footer-link">XformAI</a>.</p>
+                    <p class="footer-license">Apache License 2.0</p>
+                </div>
+                <div class="footer-col">
+                    <h4>Documentation</h4>
+                    <ul>
+                        <li><a href="#quickstart">Quick Start</a></li>
+                        <li><a href="#api">API Reference</a></li>
+                        <li><a href="#architecture">Architecture</a></li>
+                        <li><a href="#benchmarks">Benchmarks</a></li>
+                    </ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Platforms</h4>
+                    <ul>
+                        <li><a href="#platform-android">Android</a></li>
+                        <li><a href="#platform-ios">iOS</a></li>
+                        <li><a href="#platform-python">Python</a></li>
+                        <li><a href="#platform-desktop">Desktop / IoT</a></li>
+                    </ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Company</h4>
+                    <ul>
+                        <li><a href="https://www.xformai.in/" target="_blank">XformAI Website</a></li>
+                        <li><a href="https://github.com/XformAI/EDGEVDB" target="_blank">GitHub Repository</a></li>
+                        <li><a href="https://github.com/XformAI/EDGEVDB/issues" target="_blank">Report Issue</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 <a href="https://www.xformai.in/" target="_blank">XformAI</a>. All rights reserved.</p>
+                <p class="footer-built">Built with ❤️ for edge AI developers</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Back to top -->
+    <button id="back-to-top" class="back-to-top" aria-label="Back to top">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+    </button>
+
+    <script src="script.js"></script>
+</body>
+</html>
