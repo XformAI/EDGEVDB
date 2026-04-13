@@ -7,7 +7,7 @@
 **Built by [XformAI](https://www.xformai.in/) — Transforming AI for the Real World**
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-1.0.4-green.svg)]()
+[![Version](https://img.shields.io/badge/version-1.0.5-green.svg)]()
 [![PyPI](https://img.shields.io/pypi/v/edgevdb.svg)](https://pypi.org/project/edgevdb/)
 [![Android](https://img.shields.io/badge/android-GitHub%20Packages-brightgreen.svg)](https://github.com/XformAI/EDGEVDB/packages)
 [![C++17](https://img.shields.io/badge/C%2B%2B-17-orange.svg)]()
@@ -177,7 +177,7 @@ repositories {
 
 // build.gradle.kts
 dependencies {
-    implementation("in.xformai:edgevdb-android:1.0.4")
+    implementation("in.xformai:edgevdb-android:1.0.5")
 }
 ```
 

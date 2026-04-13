@@ -53,7 +53,7 @@ android {
     }
 }
 
-val libVersion = findProperty("EDGEVDB_VERSION") as String? ?: "1.0.4"
+val libVersion = findProperty("EDGEVDB_VERSION") as String? ?: "1.0.5"
 
 publishing {
     publications {
