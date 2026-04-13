@@ -1,18 +1,18 @@
 [build-system]
 requires = ["setuptools>=64", "wheel"]
-build-backend = "setuptools.backends._legacy:_Backend"
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "edgevdb"
 version = "1.0.0"
-description = "EdgeVDB — On-device Vector Database SDK for RAG"
-readme = "../../README.md"
+description = "EdgeVDB — On-device vector database with HNSW, hybrid retrieval, knowledge graph, and CRDT sync"
+readme = "README.md"
 license = {text = "Apache-2.0"}
 requires-python = ">=3.8"
 authors = [
-    {name = "EdgeVDB Team"}
+    {name = "XformAI", email = "contact@xformai.in"}
 ]
-keywords = ["vector-database", "hnsw", "embedding", "rag", "onnx", "on-device"]
+keywords = ["vector-database", "hnsw", "embedding", "rag", "on-device", "edge-ai", "semantic-search"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
@@ -23,15 +23,28 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: MacOS",
     "Topic :: Database",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
 
 [project.urls]
-Homepage = "https://github.com/edgevdb/edgevdb"
-Documentation = "https://github.com/edgevdb/edgevdb/tree/main/docs"
-Repository = "https://github.com/edgevdb/edgevdb"
+Homepage = "https://github.com/XformAI/EDGEVDB"
+Documentation = "https://xformai.github.io/EDGEVDB/"
+Repository = "https://github.com/XformAI/EDGEVDB"
+Issues = "https://github.com/XformAI/EDGEVDB/issues"
 
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["edgevdb*"]
+
+[tool.setuptools.package-data]
+"edgevdb" = [
+    "lib/linux/*.so",
+    "lib/darwin/*.dylib",
+    "lib/windows/*.dll",
+    "lib/README.md",
+]

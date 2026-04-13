@@ -1,0 +1,124 @@
+name: Build and Publish to PyPI
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+jobs:
+  build-native:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: linux
+            lib_name: libedgevdb_shared.so
+          - os: macos-latest
+            platform: darwin
+            lib_name: libedgevdb_shared.dylib
+          - os: windows-latest
+            platform: windows
+            lib_name: libedgevdb_shared.dll
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install CMake
+        uses: lukka/get-cmake@latest
+
+      - name: Build native library (Release)
+        run: |
+          cmake --preset desktop-release
+          cmake --build build/desktop-release --config Release
+
+      - name: Copy native lib to package
+        shell: bash
+        run: |
+          mkdir -p python/edgevdb/lib/${{ matrix.platform }}
+          find build/desktop-release -name "${{ matrix.lib_name }}" -exec cp {} python/edgevdb/lib/${{ matrix.platform }}/ \;
+
+      - name: Strip (Linux/macOS)
+        if: matrix.platform != 'windows'
+        run: strip python/edgevdb/lib/${{ matrix.platform }}/${{ matrix.lib_name }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: native-${{ matrix.platform }}
+          path: python/edgevdb/lib/${{ matrix.platform }}/
+
+  build-wheel:
+    needs: build-native
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: native-linux
+          path: python/edgevdb/lib/linux/
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: native-darwin
+          path: python/edgevdb/lib/darwin/
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: native-windows
+          path: python/edgevdb/lib/windows/
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install build tools
+        run: pip install --upgrade build
+
+      - name: Build sdist and wheel
+        working-directory: python
+        run: python -m build
+
+      - name: List dist contents
+        run: |
+          ls -lh python/dist/
+          python -c "import zipfile; z=zipfile.ZipFile(list(__import__('pathlib').Path('python/dist').glob('*.whl'))[0]); [print(f'{i.file_size:>10}  {i.filename}') for i in z.infolist() if i.filename.endswith(('.so','.dll','.dylib'))]"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: python-dist
+          path: python/dist/
+
+  publish-testpypi:
+    needs: build-wheel
+    runs-on: ubuntu-latest
+    environment: testpypi
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: python-dist
+          path: dist/
+
+      - name: Publish to TestPyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
+
+  publish-pypi:
+    needs: build-wheel
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: python-dist
+          path: dist/
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1

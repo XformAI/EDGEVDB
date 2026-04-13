@@ -1,0 +1,4 @@
+recursive-include edgevdb/lib *.so *.dll *.dylib
+include edgevdb/lib/README.md
+include README.md
+include LICENSE

@@ -1,0 +1,27 @@
+Introducing EdgeVDB: An Open-Source On-Device Vector Database for Edge AI
+
+At XformAI, we have been building tools that bring AI closer to where it matters most: directly on the device. Today, we are open-sourcing EdgeVDB, a high-performance embeddable vector database written in pure C++17 with zero external dependencies.
+
+EdgeVDB is designed for developers building retrieval-augmented generation (RAG), semantic search, and knowledge-driven applications that need to run entirely on-device, with no cloud, no network round-trips, and no API keys.
+
+What EdgeVDB delivers:
+
+- Sub-millisecond vector queries (0.99 ms average at 10,000 vectors, 96.8% recall)
+- A complete RAG stack in a single library: HNSW index, hybrid re-ranking, knowledge graph, token budgeting
+- Native SDKs for Android (Kotlin/JNI), iOS (Swift), Python (ctypes), and C/C++
+- A stripped library size of 428 KB on desktop and 241 KB on Android ARM64
+- Built-in object store with typed relations and CRDT-based cross-device sync
+- Full privacy by default. All data stays on-device. No telemetry.
+
+We built this because existing vector databases are either too large, require a running server, or lack the retrieval pipeline components that real-world mobile and edge applications need. EdgeVDB fits in under 500 KB and runs anywhere from a Raspberry Pi to a flagship Android phone.
+
+The entire project is Apache 2.0 licensed. We welcome contributions of all kinds: bug reports, documentation improvements, new platform ports, performance optimizations, or feature ideas.
+
+If you are working on on-device AI, mobile RAG, semantic search, or offline-first applications, we would love for you to try EdgeVDB and share your feedback.
+
+Repository: https://github.com/XformAI/EDGEVDB
+Documentation: https://xformai.github.io/EDGEVDB/
+
+Star the repo if you find it useful. Open an issue if something breaks. Submit a PR if you want to make it better. Every contribution matters.
+
+#OpenSource #VectorDatabase #EdgeAI #OnDeviceAI #RAG #SemanticSearch #Android #iOS #CPlusPlus #MachineLearning #ArtificialIntelligence #Developers #XformAI
