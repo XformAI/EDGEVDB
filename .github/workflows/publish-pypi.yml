@@ -6,13 +6,39 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-native:
+  build-native-linux:
+    runs-on: ubuntu-latest
+    container: quay.io/pypa/manylinux2014_x86_64
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install build tools
+        run: |
+          yum install -y ninja-build
+          pip3 install cmake
+
+      - name: Build native library (Release)
+        run: |
+          cmake -G Ninja -B build/desktop-release \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_CXX_FLAGS="-O3 -DNDEBUG"
+          cmake --build build/desktop-release --config Release
+
+      - name: Copy and strip
+        run: |
+          mkdir -p python/edgevdb/lib/linux
+          find build/desktop-release -name "libedgevdb_shared.so" -exec cp {} python/edgevdb/lib/linux/ \;
+          strip python/edgevdb/lib/linux/libedgevdb_shared.so
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: native-linux
+          path: python/edgevdb/lib/linux/
+
+  build-native-other:
     strategy:
       matrix:
         include:
-          - os: ubuntu-latest
-            platform: linux
-            lib_name: libedgevdb_shared.so
           - os: macos-latest
             platform: darwin
             lib_name: libedgevdb_shared.dylib
@@ -38,10 +64,6 @@ jobs:
           mkdir -p python/edgevdb/lib/${{ matrix.platform }}
           find build/desktop-release -name "${{ matrix.lib_name }}" -exec cp {} python/edgevdb/lib/${{ matrix.platform }}/ \;
 
-      - name: Strip (Linux)
-        if: matrix.platform == 'linux'
-        run: strip python/edgevdb/lib/${{ matrix.platform }}/${{ matrix.lib_name }}
-
       - name: Strip (macOS)
         if: matrix.platform == 'darwin'
         run: strip -x python/edgevdb/lib/${{ matrix.platform }}/${{ matrix.lib_name }}
@@ -52,7 +74,7 @@ jobs:
           path: python/edgevdb/lib/${{ matrix.platform }}/
 
   build-wheel:
-    needs: build-native
+    needs: [build-native-linux, build-native-other]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
