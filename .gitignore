@@ -97,6 +97,11 @@ edgevdb/android/src/main/assets/vocab.txt
 # EdgeVDB runtime database directories
 edgevdb_objects/
 
+# Prebuilt native libs (CI builds these from source)
+python/edgevdb/lib/linux/
+python/edgevdb/lib/darwin/
+python/edgevdb/lib/windows/
+
 # Python
 __pycache__/
 *.py[cod]
