@@ -94,6 +94,9 @@ edgevdb/android/src/main/assets/model.onnx
 edgevdb/android/src/main/assets/vocab.txt
 *.onnx
 
+# EdgeVDB runtime database directories
+edgevdb_objects/
+
 # Python
 __pycache__/
 *.py[cod]
