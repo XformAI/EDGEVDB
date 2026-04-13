@@ -1,5 +1,6 @@
+# -*- coding: utf-8 -*-
 """
-EdgeVDB Python SDK — ctypes wrapper for desktop/Raspberry Pi.
+EdgeVDB Python SDK -- ctypes wrapper for desktop/Raspberry Pi.
 """
 
 import ctypes
