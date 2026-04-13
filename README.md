@@ -1,11 +1,33 @@
-# EdgeVDB SDK
+<div align="center">
 
-> **Embeddable cross-platform vector database with HNSW ANN, hybrid retrieval, knowledge graph, relational object store, and CRDT-based sync — all in a single zero-dependency C++ library.**
+# ⬡ EdgeVDB SDK
+
+### On-Device Vector Database for the Edge
+
+**Built by [XformAI](https://www.xformai.in/) — Transforming AI for the Real World**
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![Version](https://img.shields.io/badge/version-1.0.0-green.svg)]()
 [![C++17](https://img.shields.io/badge/C%2B%2B-17-orange.svg)]()
 [![Platforms](https://img.shields.io/badge/platforms-Android%20%7C%20iOS%20%7C%20Desktop-lightgrey.svg)]()
+[![Docs](https://img.shields.io/badge/docs-edgevdb.xformai.in-6366f1.svg)](https://xformai.github.io/EDGEVDB/)
+
+[📖 Documentation](https://xformai.github.io/EDGEVDB/) · [🌐 XformAI Website](https://www.xformai.in/) · [🐛 Report Bug](https://github.com/XformAI/EDGEVDB/issues) · [💡 Request Feature](https://github.com/XformAI/EDGEVDB/issues)
+
+</div>
+
+---
+
+> **Embeddable cross-platform vector database with HNSW ANN, hybrid retrieval, knowledge graph, relational object store, and CRDT-based sync — all in a single zero-dependency C++ library.**
+
+## Why EdgeVDB?
+
+- **Sub-millisecond queries** — 0.99ms avg at 10K vectors with 96.8% recall
+- **Tiny footprint** — 428 KB desktop, 241 KB Android. No bloat.
+- **Zero dependencies** — Pure C++17. ONNX Runtime is optional.
+- **Truly cross-platform** — One codebase for Android, iOS, Python, Desktop, and IoT
+- **Privacy-first** — All data stays on-device. No cloud, no telemetry, no API keys.
+- **Built-in RAG stack** — HNSW + hybrid ranking + knowledge graph + token budgeting
 
 ## Features
 
@@ -162,6 +184,8 @@ See [BENCHMARKS.md](BENCHMARKS.md) for the full benchmark report with real measu
 
 ## Documentation
 
+> **📖 Full interactive documentation: [xformai.github.io/EDGEVDB](https://xformai.github.io/EDGEVDB/)**
+
 - [**Developer Guide**](DEVELOPER_GUIDE.md) — Building, integration, publishing
 - [Architecture](docs/architecture.md) — System design and data flow
 - [API Reference](docs/api_reference.md) — Complete C API documentation
@@ -169,6 +193,38 @@ See [BENCHMARKS.md](BENCHMARKS.md) for the full benchmark report with real measu
 - [iOS Integration](docs/ios_integration.md)
 - [Python Integration](docs/python_integration.md)
 
+## Contributing
+
+We welcome contributions! Here's how to get started:
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+Please read the [Developer Guide](DEVELOPER_GUIDE.md) for coding conventions and build setup.
+
+
+
+## Documentation
+
+- [**Developer Guide**](DEVELOPER_GUIDE.md) — Building, integration, publishing
+- [Architecture](docs/architecture.md) — System design and data flow
+- [API Reference](docs/api_reference.md) — Complete C API documentation
+- [Android Integration](docs/android_integration.md)
+- [iOS Integration](docs/ios_integration.md)
+- [Python Integration](docs/python_integration.md)
+
+
 ## License
 
 Apache License 2.0 — see [LICENSE](LICENSE).
+
+---
+
+<div align="center">
+
+**[XformAI](https://www.xformai.in/)** · Made with ❤️ for edge AI developers
+
+[Website](https://www.xformai.in/) · [Documentation](https://xformai.github.io/EDGEVDB/) · [GitHub](https://github.com/XformAI/EDGEVDB)
