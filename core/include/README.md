@@ -298,7 +298,7 @@ fn main() {
 
 EdgeVDB guarantees ABI stability for the C API across minor versions (e.g., 1.0.x → 1.1.x). This means:
 
-- **Binary compatibility**: Applications linked against `libedgevdb.so` v1.0.0 will work with v1.0.5 without recompilation
+- **Binary compatibility**: Applications linked against `libedgevdb.so` v1.0.0 will work with v1.0.6 without recompilation
 - **Handle opaqueness**: Handle sizes and layouts never change
 - **Function signatures**: No function signatures change (only additions)
 - **Error codes**: Error code values are stable

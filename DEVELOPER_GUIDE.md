@@ -399,7 +399,7 @@ dependencies {
 ```kotlin
 // build.gradle.kts
 dependencies {
-    implementation("in.xformai:edgevdb-android:1.0.5")
+    implementation("in.xformai:edgevdb-android:1.0.6")
 }
 ```
 
@@ -471,7 +471,7 @@ db.close()
 ```swift
 // Package.swift or Xcode → File → Add Package Dependencies
 dependencies: [
-    .package(url: "https://github.com/XformAI/EDGEVDB.git", from: "1.0.5")
+    .package(url: "https://github.com/XformAI/EDGEVDB.git", from: "1.0.6")
 ]
 ```
 
@@ -650,7 +650,7 @@ pip install edgevdb
 
 1. Bump `version` in `python/pyproject.toml`
 2. Commit and push to `main`
-3. Create a GitHub release with a `v*` tag (e.g. `v1.0.5`)
+3. Create a GitHub release with a `v*` tag (e.g. `v1.0.6`)
 
 **pyproject.toml** is configured at `python/pyproject.toml`.
 
@@ -662,9 +662,9 @@ The Android SDK is **published on GitHub Packages**: [github.com/XformAI/EDGEVDB
 
 **To release a new version:**
 
-1. Bump `EDGEVDB_VERSION` (passed via `-P` flag in CI, defaults to `1.0.5`)
+1. Bump `EDGEVDB_VERSION` (passed via `-P` flag in CI, defaults to `1.0.6`)
 2. Commit and push to `main`
-3. Create a GitHub release with a `v*` tag (e.g. `v1.0.5`)
+3. Create a GitHub release with a `v*` tag (e.g. `v1.0.6`)
 
 **Users add to their project:**
 
@@ -682,7 +682,7 @@ repositories {
 
 // build.gradle.kts
 dependencies {
-    implementation("in.xformai:edgevdb-android:1.0.5")
+    implementation("in.xformai:edgevdb-android:1.0.6")
 }
 ```
 
@@ -698,7 +698,7 @@ include(FetchContent)
 FetchContent_Declare(
     edgevdb
     GIT_REPOSITORY https://github.com/edgevdb/edgevdb.git
-    GIT_TAG        v1.0.5
+    GIT_TAG        v1.0.6
 )
 FetchContent_MakeAvailable(edgevdb)
 target_link_libraries(my_app PRIVATE edgevdb_core)
@@ -725,7 +725,7 @@ from conan import ConanFile
 
 class EdgeVDBConan(ConanFile):
     name = "edgevdb"
-    version = "1.0.5"
+    version = "1.0.6"
     settings = "os", "compiler", "build_type", "arch"
     generators = "CMakeToolchain", "CMakeDeps"
     exports_sources = "CMakeLists.txt", "core/*", "CMakePresets.json"
@@ -776,14 +776,14 @@ let package = Package(
 # EdgeVDB.podspec
 Pod::Spec.new do |s|
   s.name         = "EdgeVDB"
-  s.version      = "1.0.5"
+  s.version      = "1.0.6"
   s.summary      = "On-device vector database SDK"
   s.homepage     = "https://github.com/edgevdb/edgevdb"
   s.license      = "Apache-2.0"
   s.author       = "EdgeVDB Team"
   s.ios.deployment_target = "15.0"
   s.osx.deployment_target = "12.0"
-  s.source       = { git: "https://github.com/XformAI/EDGEVDB.git", tag: "v1.0.5" }
+  s.source       = { git: "https://github.com/XformAI/EDGEVDB.git", tag: "v1.0.6" }
 
   # C++ core (source pod)
   s.subspec 'Core' do |core|
