@@ -294,4 +294,4 @@ cd android
 
 ---
 
-*Report generated from EdgeVDB v0.1.1 release build. All values are single-run measurements — for statistical significance, run each benchmark 5+ times and report medians.*
+*Report generated from EdgeVDB v0.1.0 release build. All values are single-run measurements — for statistical significance, run each benchmark 5+ times and report medians.*
