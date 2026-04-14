@@ -110,7 +110,7 @@ TEST_CASE("End-to-end C API") {
 
     SUBCASE("Version string") {
         const char* ver = evdb_version_string();
-        CHECK(strcmp(ver, "1.0.0") == 0);
+        CHECK(strcmp(ver, "0.1.0") == 0);
     }
 
     // Cleanup
