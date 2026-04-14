@@ -37,23 +37,14 @@ jobs:
           python3.12 -m build --wheel
           ls -lh dist/
 
-      - name: Tag wheel as manylinux_2_28_x86_64
+      - name: Re-tag wheel as manylinux_2_28_x86_64
         working-directory: python
         run: |
           python3.12 -m pip install wheel
           for whl in dist/*.whl; do
-            python3.12 -c "
-          import wheel.wheelfile, pathlib, re, shutil, os
-          src = pathlib.Path('$whl')
-          # Rename: replace py3-none-any or py3-none-linux_x86_64 with manylinux tag
-          new_name = re.sub(r'py3-none-\w+', 'py3-none-manylinux_2_28_x86_64', src.name)
-          if new_name == src.name:
-              new_name = src.name.replace('none-any', 'none-manylinux_2_28_x86_64')
-          dst = src.parent / new_name
-          if dst != src:
-              shutil.move(str(src), str(dst))
-              print(f'Renamed: {src.name} -> {dst.name}')
-          "
+            python3.12 -m wheel tags --remove \
+              --platform-tag manylinux_2_28_x86_64 \
+              "$whl"
           done
           ls -lh dist/
 
@@ -109,19 +100,14 @@ jobs:
           python -m build --wheel
           ls -lh dist/
 
-      - name: Tag wheel as macosx
+      - name: Re-tag wheel as macosx
         working-directory: python
         run: |
+          pip install wheel
           for whl in dist/*.whl; do
-            python3 -c "
-          import pathlib, re, shutil
-          src = pathlib.Path('$whl')
-          new_name = src.name.replace('none-any', 'none-macosx_11_0_arm64')
-          dst = src.parent / new_name
-          if dst != src:
-              shutil.move(str(src), str(dst))
-              print(f'Renamed: {src.name} -> {dst.name}')
-          "
+            python -m wheel tags --remove \
+              --platform-tag macosx_11_0_arm64 \
+              "$whl"
           done
           ls -lh dist/
 
@@ -177,20 +163,15 @@ jobs:
           python -m build --wheel
           Get-ChildItem dist/
 
-      - name: Tag wheel as win_amd64
+      - name: Re-tag wheel as win_amd64
         working-directory: python
         shell: bash
         run: |
+          pip install wheel
           for whl in dist/*.whl; do
-            python -c "
-          import pathlib, shutil
-          src = pathlib.Path('$whl')
-          new_name = src.name.replace('none-any', 'none-win_amd64')
-          dst = src.parent / new_name
-          if dst != src:
-              shutil.move(str(src), str(dst))
-              print(f'Renamed: {src.name} -> {dst.name}')
-          "
+            python -m wheel tags --remove \
+              --platform-tag win_amd64 \
+              "$whl"
           done
           ls -lh dist/
 

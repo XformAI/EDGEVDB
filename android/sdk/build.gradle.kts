@@ -58,7 +58,7 @@ tasks.withType<Jar> {
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }
 
-val libVersion = findProperty("EDGEVDB_VERSION") as String? ?: "1.0.6"
+val libVersion = findProperty("EDGEVDB_VERSION") as String? ?: "0.1.1"
 
 publishing {
     publications {
