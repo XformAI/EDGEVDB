@@ -6,119 +6,240 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-native-linux:
+  # ── Build per-platform wheels ──────────────────────────────────────
+  build-wheel-linux:
     runs-on: ubuntu-latest
     container: quay.io/pypa/manylinux_2_28_x86_64
     steps:
       - uses: actions/checkout@v4
 
       - name: Install build tools
-        run: |
-          dnf install -y ninja-build cmake
+        run: dnf install -y ninja-build cmake python3.12 python3.12-pip
 
-      - name: Build native library (Release)
+      - name: Build native library
         run: |
           cmake -G Ninja -B build/desktop-release \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_CXX_FLAGS="-O3 -DNDEBUG"
           cmake --build build/desktop-release --config Release
 
-      - name: Copy and strip
+      - name: Copy and strip native lib
         run: |
           mkdir -p python/edgevdb/lib/linux
           find build/desktop-release -name "libedgevdb_shared.so" -exec cp {} python/edgevdb/lib/linux/ \;
           strip python/edgevdb/lib/linux/libedgevdb_shared.so
 
+      - name: Build wheel
+        working-directory: python
+        run: |
+          python3.12 -m pip install --upgrade build wheel setuptools
+          rm -rf dist/
+          python3.12 -m build --wheel
+          ls -lh dist/
+
+      - name: Tag wheel as manylinux_2_28_x86_64
+        working-directory: python
+        run: |
+          python3.12 -m pip install wheel
+          for whl in dist/*.whl; do
+            python3.12 -c "
+          import wheel.wheelfile, pathlib, re, shutil, os
+          src = pathlib.Path('$whl')
+          # Rename: replace py3-none-any or py3-none-linux_x86_64 with manylinux tag
+          new_name = re.sub(r'py3-none-\w+', 'py3-none-manylinux_2_28_x86_64', src.name)
+          if new_name == src.name:
+              new_name = src.name.replace('none-any', 'none-manylinux_2_28_x86_64')
+          dst = src.parent / new_name
+          if dst != src:
+              shutil.move(str(src), str(dst))
+              print(f'Renamed: {src.name} -> {dst.name}')
+          "
+          done
+          ls -lh dist/
+
+      - name: Verify wheel contents
+        working-directory: python
+        run: |
+          python3.12 -c "
+          import zipfile, pathlib, sys
+          for whl in pathlib.Path('dist').glob('*.whl'):
+              z = zipfile.ZipFile(whl)
+              native = [i for i in z.infolist() if i.filename.endswith('.so')]
+              print(f'{whl.name} ({whl.stat().st_size / 1024 / 1024:.1f} MB)')
+              for i in native:
+                  print(f'  {i.file_size:>10,}  {i.filename}')
+              if not native:
+                  print('ERROR: No .so found in wheel!'); sys.exit(1)
+          "
+
       - uses: actions/upload-artifact@v4
         with:
-          name: native-linux
-          path: python/edgevdb/lib/linux/
+          name: wheel-linux
+          path: python/dist/*.whl
 
-  build-native-other:
-    strategy:
-      matrix:
-        include:
-          - os: macos-latest
-            platform: darwin
-            lib_name: libedgevdb_shared.dylib
-          - os: windows-latest
-            platform: windows
-            lib_name: libedgevdb_shared.dll
-
-    runs-on: ${{ matrix.os }}
+  build-wheel-macos:
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
 
       - name: Install CMake
         uses: lukka/get-cmake@latest
 
-      - name: Build native library (Release)
+      - name: Build native library
         run: |
           cmake --preset desktop-release
           cmake --build build/desktop-release --config Release
 
-      - name: Copy native lib to package
-        shell: bash
+      - name: Copy and strip native lib
         run: |
-          mkdir -p python/edgevdb/lib/${{ matrix.platform }}
-          find build/desktop-release -name "${{ matrix.lib_name }}" -exec cp {} python/edgevdb/lib/${{ matrix.platform }}/ \;
-
-      - name: Strip (macOS)
-        if: matrix.platform == 'darwin'
-        run: strip -x python/edgevdb/lib/${{ matrix.platform }}/${{ matrix.lib_name }}
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: native-${{ matrix.platform }}
-          path: python/edgevdb/lib/${{ matrix.platform }}/
-
-  build-wheel:
-    needs: [build-native-linux, build-native-other]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/download-artifact@v4
-        with:
-          name: native-linux
-          path: python/edgevdb/lib/linux/
-
-      - uses: actions/download-artifact@v4
-        with:
-          name: native-darwin
-          path: python/edgevdb/lib/darwin/
-
-      - uses: actions/download-artifact@v4
-        with:
-          name: native-windows
-          path: python/edgevdb/lib/windows/
+          mkdir -p python/edgevdb/lib/darwin
+          find build/desktop-release -name "libedgevdb_shared.dylib" -exec cp {} python/edgevdb/lib/darwin/ \;
+          strip -x python/edgevdb/lib/darwin/libedgevdb_shared.dylib
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
-      - name: Install build tools
-        run: pip install --upgrade build
-
-      - name: Build sdist and wheel
+      - name: Build wheel
         working-directory: python
         run: |
+          pip install --upgrade build wheel setuptools
           rm -rf dist/
-          python -m build
+          python -m build --wheel
+          ls -lh dist/
 
-      - name: List dist contents
+      - name: Tag wheel as macosx
+        working-directory: python
         run: |
-          ls -lh python/dist/
-          python -c "import zipfile; z=zipfile.ZipFile(list(__import__('pathlib').Path('python/dist').glob('*.whl'))[0]); [print(f'{i.file_size:>10}  {i.filename}') for i in z.infolist() if i.filename.endswith(('.so','.dll','.dylib'))]"
+          for whl in dist/*.whl; do
+            python3 -c "
+          import pathlib, re, shutil
+          src = pathlib.Path('$whl')
+          new_name = src.name.replace('none-any', 'none-macosx_11_0_arm64')
+          dst = src.parent / new_name
+          if dst != src:
+              shutil.move(str(src), str(dst))
+              print(f'Renamed: {src.name} -> {dst.name}')
+          "
+          done
+          ls -lh dist/
+
+      - name: Verify wheel contents
+        working-directory: python
+        run: |
+          python3 -c "
+          import zipfile, pathlib, sys
+          for whl in pathlib.Path('dist').glob('*.whl'):
+              z = zipfile.ZipFile(whl)
+              native = [i for i in z.infolist() if i.filename.endswith('.dylib')]
+              print(f'{whl.name} ({whl.stat().st_size / 1024 / 1024:.1f} MB)')
+              for i in native:
+                  print(f'  {i.file_size:>10,}  {i.filename}')
+              if not native:
+                  print('ERROR: No .dylib found in wheel!'); sys.exit(1)
+          "
 
       - uses: actions/upload-artifact@v4
         with:
-          name: python-dist
-          path: python/dist/
+          name: wheel-macos
+          path: python/dist/*.whl
 
+  build-wheel-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install CMake
+        uses: lukka/get-cmake@latest
+
+      - name: Build native library
+        run: |
+          cmake --preset desktop-release
+          cmake --build build/desktop-release --config Release
+
+      - name: Copy native lib
+        shell: bash
+        run: |
+          mkdir -p python/edgevdb/lib/windows
+          find build/desktop-release -name "libedgevdb_shared.dll" -o -name "edgevdb_shared.dll" | head -1 | xargs -I{} cp {} python/edgevdb/lib/windows/libedgevdb_shared.dll
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build wheel
+        working-directory: python
+        run: |
+          pip install --upgrade build wheel setuptools
+          Remove-Item -Recurse -Force dist -ErrorAction SilentlyContinue
+          python -m build --wheel
+          Get-ChildItem dist/
+
+      - name: Tag wheel as win_amd64
+        working-directory: python
+        shell: bash
+        run: |
+          for whl in dist/*.whl; do
+            python -c "
+          import pathlib, shutil
+          src = pathlib.Path('$whl')
+          new_name = src.name.replace('none-any', 'none-win_amd64')
+          dst = src.parent / new_name
+          if dst != src:
+              shutil.move(str(src), str(dst))
+              print(f'Renamed: {src.name} -> {dst.name}')
+          "
+          done
+          ls -lh dist/
+
+      - name: Verify wheel contents
+        shell: bash
+        run: |
+          python -c "
+          import zipfile, pathlib, sys
+          for whl in pathlib.Path('python/dist').glob('*.whl'):
+              z = zipfile.ZipFile(whl)
+              native = [i for i in z.infolist() if i.filename.endswith('.dll')]
+              print(f'{whl.name} ({whl.stat().st_size / 1024 / 1024:.1f} MB)')
+              for i in native:
+                  print(f'  {i.file_size:>10,}  {i.filename}')
+              if not native:
+                  print('ERROR: No .dll found in wheel!'); sys.exit(1)
+          "
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wheel-windows
+          path: python/dist/*.whl
+
+  # ── Build source distribution ──────────────────────────────────────
+  build-sdist:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build sdist
+        working-directory: python
+        run: |
+          pip install --upgrade build
+          python -m build --sdist
+          ls -lh dist/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sdist
+          path: python/dist/*.tar.gz
+
+  # ── Publish ────────────────────────────────────────────────────────
   publish-testpypi:
-    needs: build-wheel
+    needs: [build-wheel-linux, build-wheel-macos, build-wheel-windows, build-sdist]
     runs-on: ubuntu-latest
     environment: testpypi
     permissions:
@@ -126,8 +247,11 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: python-dist
           path: dist/
+          merge-multiple: true
+
+      - name: List all artifacts
+        run: ls -lh dist/
 
       - name: Publish to TestPyPI
         uses: pypa/gh-action-pypi-publish@release/v1
@@ -136,7 +260,7 @@ jobs:
           skip-existing: true
 
   publish-pypi:
-    needs: build-wheel
+    needs: [build-wheel-linux, build-wheel-macos, build-wheel-windows, build-sdist]
     runs-on: ubuntu-latest
     environment: pypi
     permissions:
@@ -145,8 +269,11 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: python-dist
           path: dist/
+          merge-multiple: true
+
+      - name: List all artifacts
+        run: ls -lh dist/
 
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1

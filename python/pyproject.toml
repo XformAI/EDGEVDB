@@ -44,7 +44,13 @@ include = ["edgevdb*"]
 [tool.setuptools.package-data]
 "edgevdb" = [
     "lib/linux/*.so",
+    "lib/linux/*.so.*",
     "lib/darwin/*.dylib",
     "lib/windows/*.dll",
     "lib/README.md",
 ]
+
+# Disable VCS-based file discovery so .gitignore doesn't exclude native libs.
+# Only files matching package-data patterns (above) are included.
+[tool.setuptools]
+include-package-data = false
