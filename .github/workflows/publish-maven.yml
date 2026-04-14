@@ -12,6 +12,7 @@ on:
 permissions:
   packages: write
   contents: read
+  actions: read
 
 jobs:
   publish:
@@ -42,6 +43,29 @@ jobs:
           else
             TAG="${GITHUB_REF#refs/tags/v}"
             echo "version=${TAG}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Delete existing package version (if any)
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          PACKAGE="edgevdb-android"
+          echo "Checking for existing version $VERSION of $PACKAGE..."
+
+          # List all versions and find the matching one
+          VERSION_ID=$(gh api \
+            "/orgs/XformAI/packages/maven/$PACKAGE/versions" \
+            --jq ".[] | select(.name == \"$VERSION\") | .id" 2>/dev/null || echo "")
+
+          if [ -n "$VERSION_ID" ]; then
+            echo "Found existing version $VERSION (id=$VERSION_ID), deleting..."
+            gh api --method DELETE \
+              "/orgs/XformAI/packages/maven/$PACKAGE/versions/$VERSION_ID" \
+              2>/dev/null && echo "Deleted successfully" || echo "Delete failed (may need manual cleanup)"
+          else
+            echo "No existing version $VERSION found, proceeding with publish"
           fi
 
       - name: Build and publish to GitHub Packages

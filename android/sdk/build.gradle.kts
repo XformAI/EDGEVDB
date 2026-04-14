@@ -53,6 +53,11 @@ android {
     }
 }
 
+// Suppress duplicate source entries in the sources JAR produced by maven-publish
+tasks.withType<Jar> {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
 val libVersion = findProperty("EDGEVDB_VERSION") as String? ?: "1.0.5"
 
 publishing {
