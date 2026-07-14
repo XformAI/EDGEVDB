@@ -125,3 +125,11 @@ ENV/
 AGENTS.md
 CLAUDE.md
 /python=3.10
+
+# Personal / working documents (not part of the distributed repo)
+*.docx
+*.doc
+*.pdf
+EdgeVDB_Paper.docx
+EdgeVDB_Repository_Audit_Report.docx
+CHANGELOG.md
