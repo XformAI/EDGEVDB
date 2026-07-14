@@ -191,6 +191,9 @@ public:
     std::vector<std::pair<uint64_t, float>> knnSearch(const float* query, int k, int ef = -1) const;
     size_t size() const;
     void setEfSearch(int ef);
+    // Deterministic layer assignment for reproducible builds (tests,
+    // self-check benchmarks). Call before inserting.
+    void seedLevelRng(unsigned seed) { rng_.seed(seed); }
     void clear();
     bool rebuildFromChunkStore(const ChunkStore& store);
 
