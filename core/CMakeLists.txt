@@ -33,6 +33,9 @@ target_include_directories(edgevdb_core PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 target_link_libraries(edgevdb_core PUBLIC edgevdb_vendor)
+# The embedder dlopen()s ONNX Runtime at runtime; glibc < 2.34 keeps the
+# dl* symbols in a separate libdl (CMAKE_DL_LIBS is empty on Windows).
+target_link_libraries(edgevdb_core PUBLIC ${CMAKE_DL_LIBS})
 target_compile_features(edgevdb_core PUBLIC cxx_std_17)
 
 # Strict warnings
@@ -71,6 +74,7 @@ target_include_directories(edgevdb_shared PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 target_link_libraries(edgevdb_shared PUBLIC edgevdb_vendor)
+target_link_libraries(edgevdb_shared PUBLIC ${CMAKE_DL_LIBS})
 target_compile_features(edgevdb_shared PUBLIC cxx_std_17)
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
