@@ -2,6 +2,8 @@
 
 #include "schema.hpp"
 #include "log.hpp"
+#include "crc32.hpp"
+#include "persist.hpp"
 
 #include <unordered_map>
 #include <shared_mutex>
@@ -37,6 +39,8 @@ private:
     std::unordered_map<std::string, std::unordered_map<uint64_t, std::vector<uint64_t>>> from_index_;
     std::unordered_map<std::string, std::unordered_map<uint64_t, std::vector<uint64_t>>> to_index_;
     mutable std::shared_mutex rw_mutex_;
+
+    void clearUnlocked();
 };
 
 // ── Implementation ────────────────────────────────────────
@@ -130,31 +134,34 @@ inline void RelationIndex::forEach(std::function<void(const RelationEdge&)> fn) 
 inline bool RelationIndex::save(const std::string& path) const {
     std::shared_lock<std::shared_mutex> lock(rw_mutex_);
 
-    std::ofstream file(path, std::ios::binary | std::ios::trunc);
-    if (!file.is_open()) return false;
+    return persist::atomicSave(path, [this](std::ofstream& file) {
+        const char magic[8] = {'E','V','D','B','R','E','L','\0'};
+        file.write(magic, 8);
 
-    const char magic[8] = {'E','V','D','B','R','E','L','\0'};
-    file.write(magic, 8);
+        uint32_t version = 2; // v2: CRC enforced on load
+        file.write(reinterpret_cast<const char*>(&version), 4);
 
-    uint32_t version = 1;
-    file.write(reinterpret_cast<const char*>(&version), 4);
+        // Count total edges
+        uint32_t total = 0;
+        for (const auto& [name, edges] : relation_edges_) total += static_cast<uint32_t>(edges.size());
+        file.write(reinterpret_cast<const char*>(&total), 4);
 
-    // Count total edges
-    uint32_t total = 0;
-    for (const auto& [name, edges] : relation_edges_) total += static_cast<uint32_t>(edges.size());
-    file.write(reinterpret_cast<const char*>(&total), 4);
-
-    for (const auto& [name, edges] : relation_edges_) {
-        for (const auto& [from_id, to_id] : edges) {
-            RelationEdge edge{};
-            std::strncpy(edge.relation_name, name.c_str(), 63);
-            edge.from_id = from_id;
-            edge.to_id = to_id;
-            file.write(reinterpret_cast<const char*>(&edge), sizeof(RelationEdge));
+        uint32_t crc_state = CRC32_INIT;
+        for (const auto& [name, edges] : relation_edges_) {
+            for (const auto& [from_id, to_id] : edges) {
+                RelationEdge edge{};
+                std::strncpy(edge.relation_name, name.c_str(), 63);
+                edge.from_id = from_id;
+                edge.to_id = to_id;
+                file.write(reinterpret_cast<const char*>(&edge), sizeof(RelationEdge));
+                crc_state = crc32Update(crc_state, &edge, sizeof(RelationEdge));
+            }
         }
-    }
 
-    return file.good();
+        uint32_t crc = crc32Finalize(crc_state);
+        file.write(reinterpret_cast<const char*>(&crc), 4);
+        return file.good();
+    });
 }
 
 inline bool RelationIndex::open(const std::string& path) {
@@ -163,37 +170,68 @@ inline bool RelationIndex::open(const std::string& path) {
     std::ifstream file(path, std::ios::binary);
     if (!file.is_open()) return true; // no file = empty
 
+    const uint64_t total_size = persist::fileSize(file);
+    constexpr uint64_t HEADER_SIZE = 8 + 4 + 4;
+
     char magic[8];
     file.read(magic, 8);
     const char expected[8] = {'E','V','D','B','R','E','L','\0'};
-    if (std::memcmp(magic, expected, 8) != 0) return false;
+    if (std::memcmp(magic, expected, 8) != 0) {
+        EVDB_LOG_ERROR("RelationIndex: Invalid magic");
+        return false;
+    }
 
     uint32_t version;
     file.read(reinterpret_cast<char*>(&version), 4);
+    if (version != 2) {
+        EVDB_LOG_ERROR("RelationIndex: Unsupported version %u (expected 2)", version);
+        return false;
+    }
 
     uint32_t count;
     file.read(reinterpret_cast<char*>(&count), 4);
+    if (total_size < HEADER_SIZE + 4 ||
+        !persist::boundedCount(count, sizeof(RelationEdge), total_size - HEADER_SIZE - 4)) {
+        EVDB_LOG_ERROR("RelationIndex: Corrupt count %u", count);
+        return false;
+    }
 
-    clear();
+    clearUnlocked();
 
+    uint32_t crc_state = CRC32_INIT;
     for (uint32_t i = 0; i < count; i++) {
         RelationEdge edge;
         file.read(reinterpret_cast<char*>(&edge), sizeof(RelationEdge));
-        if (!file.good()) return false;
+        if (!file.good()) { clearUnlocked(); return false; }
+        crc_state = crc32Update(crc_state, &edge, sizeof(RelationEdge));
 
+        edge.relation_name[63] = '\0';
         std::string name(edge.relation_name);
         relation_edges_[name].push_back({edge.from_id, edge.to_id});
         from_index_[name][edge.from_id].push_back(edge.to_id);
         to_index_[name][edge.to_id].push_back(edge.from_id);
     }
 
+    uint32_t stored_crc;
+    file.read(reinterpret_cast<char*>(&stored_crc), 4);
+    if (!file.good() || crc32Finalize(crc_state) != stored_crc) {
+        EVDB_LOG_ERROR("RelationIndex: CRC32 mismatch — refusing corrupt data");
+        clearUnlocked();
+        return false;
+    }
+
     return true;
 }
 
-inline void RelationIndex::clear() {
+inline void RelationIndex::clearUnlocked() {
     relation_edges_.clear();
     from_index_.clear();
     to_index_.clear();
+}
+
+inline void RelationIndex::clear() {
+    std::unique_lock<std::shared_mutex> lock(rw_mutex_);
+    clearUnlocked();
 }
 
 } // namespace edgevdb

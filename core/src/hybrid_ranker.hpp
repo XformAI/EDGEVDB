@@ -3,6 +3,8 @@
 #include "schema.hpp"
 #include "chunk_store.hpp"
 #include "page_index.hpp"
+#include "knowledge_graph.hpp"
+#include "kg_extractor.hpp"
 #include "log.hpp"
 
 #include <vector>
@@ -34,6 +36,15 @@ struct RankerInput {
     int top_k;
 };
 
+// Ranking strategy.
+//  LinearBlend — original: alpha*cosine + beta*page + gamma*keyword.
+//  RRF         — Reciprocal Rank Fusion over the same three signals:
+//                score = Σ w_s / (k + rank_s). Rank fusion is robust to the
+//                signals' incompatible score scales (Cormack et al., 2009).
+//  GraphRRF    — RRF plus a fourth signal: knowledge-graph entity overlap
+//                between the query's extracted entities and each chunk.
+enum class RankerMode { LinearBlend = 0, RRF = 1, GraphRRF = 2 };
+
 class HybridRanker {
 public:
     HybridRanker(float alpha = 0.70f, float beta = 0.20f, float gamma = 0.10f);
@@ -43,12 +54,32 @@ public:
     void setWeights(float alpha, float beta, float gamma);
     void resetWeights();
 
+    void setMode(RankerMode mode, float rrf_k = 60.0f) {
+        mode_ = mode;
+        rrf_k_ = (rrf_k > 0.0f) ? rrf_k : 60.0f;
+    }
+    RankerMode mode() const { return mode_; }
+
+    // Optional graph inputs for GraphRRF; when either is null the mode
+    // degrades gracefully to plain RRF.
+    void setKnowledgeGraph(const KnowledgeGraph* kg, const KGExtractor* extractor) {
+        kg_ = kg;
+        kg_extractor_ = extractor;
+    }
+
     static float computeKeywordOverlap(const std::string& query, const std::string& chunk_text);
 
 private:
     float alpha_;
     float beta_;
     float gamma_;
+    RankerMode mode_ = RankerMode::LinearBlend;
+    float rrf_k_ = 60.0f;
+    const KnowledgeGraph* kg_ = nullptr;
+    const KGExtractor* kg_extractor_ = nullptr;
+
+    void applyRrfScores(std::vector<QueryResult>& results,
+                        const std::vector<float>& graph_scores) const;
 
     static std::vector<std::string> tokenize(const std::string& text);
     static std::string toLowerStr(const std::string& s);
@@ -166,10 +197,30 @@ inline std::vector<QueryResult> HybridRanker::rerank(const RankerInput& input) c
         // Keyword overlap score
         qr.keyword_score = computeKeywordOverlap(input.query_text, std::string(chunk.text));
 
-        // Combined score
+        // Combined score (LinearBlend; RRF modes overwrite below)
         qr.score = alpha_ * qr.cosine_score + beta_ * qr.page_score + gamma_ * qr.keyword_score;
 
         results.push_back(qr);
+    }
+
+    if (mode_ != RankerMode::LinearBlend) {
+        // GraphRRF's fourth signal: how many of the query's entities also
+        // occur in each chunk (via the on-device knowledge graph).
+        std::vector<float> graph_scores(results.size(), 0.0f);
+        if (mode_ == RankerMode::GraphRRF && kg_ && kg_extractor_ && !input.query_text.empty()) {
+            auto query_entities = kg_extractor_->extract(input.query_text);
+            std::unordered_map<uint64_t, float> chunk_overlap;
+            for (const auto& entity : query_entities) {
+                for (uint64_t cid : kg_->getChunksForEntity(entity.text)) {
+                    chunk_overlap[cid] += 1.0f;
+                }
+            }
+            for (size_t i = 0; i < results.size(); i++) {
+                auto it = chunk_overlap.find(results[i].chunk_id);
+                if (it != chunk_overlap.end()) graph_scores[i] = it->second;
+            }
+        }
+        applyRrfScores(results, graph_scores);
     }
 
     // Sort by final score descending
@@ -183,6 +234,55 @@ inline std::vector<QueryResult> HybridRanker::rerank(const RankerInput& input) c
     }
 
     return results;
+}
+
+inline void HybridRanker::applyRrfScores(std::vector<QueryResult>& results,
+                                         const std::vector<float>& graph_scores) const {
+    if (results.empty()) return;
+    const size_t n = results.size();
+
+    // Rank items per signal (1 = best) and fuse: Σ w_s / (k + rank_s).
+    // The linear weights double as fusion weights so existing alpha/beta/
+    // gamma tuning carries over; the graph signal reuses gamma's weight.
+    auto ranksBy = [n](const std::vector<float>& values) {
+        std::vector<size_t> order(n);
+        for (size_t i = 0; i < n; i++) order[i] = i;
+        std::stable_sort(order.begin(), order.end(),
+                         [&](size_t a, size_t b) { return values[a] > values[b]; });
+        std::vector<int> ranks(n);
+        for (size_t r = 0; r < n; r++) ranks[order[r]] = static_cast<int>(r) + 1;
+        return ranks;
+    };
+
+    std::vector<float> cosine(n), page(n), keyword(n);
+    for (size_t i = 0; i < n; i++) {
+        cosine[i] = results[i].cosine_score;
+        page[i] = results[i].page_score;
+        keyword[i] = results[i].keyword_score;
+    }
+
+    auto cosine_ranks = ranksBy(cosine);
+    auto page_ranks = ranksBy(page);
+    auto keyword_ranks = ranksBy(keyword);
+    std::vector<int> graph_ranks;
+    bool use_graph = false;
+    for (float g : graph_scores) {
+        if (g > 0.0f) { use_graph = true; break; }
+    }
+    if (use_graph) graph_ranks = ranksBy(graph_scores);
+
+    for (size_t i = 0; i < n; i++) {
+        float score = alpha_ / (rrf_k_ + static_cast<float>(cosine_ranks[i]))
+                    + beta_  / (rrf_k_ + static_cast<float>(page_ranks[i]))
+                    + gamma_ / (rrf_k_ + static_cast<float>(keyword_ranks[i]));
+        // The graph signal is sparse: a chunk sharing no entity with the
+        // query is absent from that ranked list, so it contributes nothing
+        // (standard RRF treatment of missing documents).
+        if (use_graph && graph_scores[i] > 0.0f) {
+            score += gamma_ / (rrf_k_ + static_cast<float>(graph_ranks[i]));
+        }
+        results[i].score = score;
+    }
 }
 
 } // namespace edgevdb

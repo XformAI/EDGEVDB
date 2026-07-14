@@ -155,6 +155,51 @@ db = EdgeVDB(
 )
 ```
 
+### Retrieval Modes & 0.2.0 Options
+
+```python
+# BM25-only: zero-model lexical search — no embedder required at all
+db = EdgeVDB("./data", retrieval_mode=2)
+results = db.query_bm25("zephyrium datasheet", top_k=5)
+
+# Vector-only (semantic)                 # Hybrid (default): vector ∪ BM25
+db = EdgeVDB("./data", retrieval_mode=1) # db = EdgeVDB("./data")
+
+db = EdgeVDB(
+    "./data",
+    retrieval_mode=0,                # 0 hybrid | 1 vector | 2 bm25
+    enable_page_index=0,             # skip page-proximity indexing (no page.bin)
+    ranker_mode=2, rrf_k=60.0,       # 0 linear | 1 RRF | 2 graph-boosted RRF
+    hnsw_use_heuristic_selection=1,  # diversity neighbour selection
+    hnsw_adaptive_ef=1,              # widen beam only on hard queries
+    hnsw_quantized_search=1,         # int8 traversal + exact re-rank
+    hnsw_ef_search=256,              # quality/latency dial at scale
+)
+# Enabled hnsw_* modes are auto-disabled at open if a micro-benchmark
+# finds they regress recall (enable_self_check=1 by default).
+```
+
+### Checking the Embedder Backend
+
+```python
+from edgevdb import Embedder
+e = Embedder("models/model.onnx", "models/vocab.txt")
+if not e.is_semantic:
+    print("WARNING: hash fallback active — install onnxruntime or set "
+          "EDGEVDB_ORT_LIBRARY; do not use for production search")
+```
+
+### Multi-Device Sync
+
+```python
+from edgevdb.sync import SyncHelper
+
+with EdgeVDB("./data") as db:
+    with SyncHelper(db, device_id="laptop") as sync:
+        sync.export_to_file("delta.json", since_clock=0)
+        sync.import_from_file("delta_from_phone.json")
+```
+
 ### HNSW Parameters
 
 ```python
@@ -182,7 +227,7 @@ db = EdgeVDB(
 ```python
 from edgevdb import version, set_log_level
 
-print(f"EdgeVDB v{version()}")  # "1.0.0"
+print(f"EdgeVDB v{version()}")  # "0.2.0"
 set_log_level(2)  # 0=off, 1=error, 2=info, 3=debug
 ```
 

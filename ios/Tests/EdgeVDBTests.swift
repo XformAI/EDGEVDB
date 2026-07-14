@@ -26,7 +26,7 @@ final class EdgeVDBTests: XCTestCase {
         let version = evdb_version_string()
         XCTAssertNotNil(version)
         let str = String(cString: version!)
-        XCTAssertEqual(str, "1.0.0")
+        XCTAssertEqual(str, "0.2.0")
     }
 
     func testInsertAndQueryChunks() throws {

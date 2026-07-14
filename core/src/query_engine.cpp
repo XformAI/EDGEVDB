@@ -16,11 +16,37 @@ QueryEngine::QueryEngine(ChunkStore* chunk_store, HNSWIndex* hnsw_index,
 CombinedResult QueryEngine::query(const CombinedQuery& q, const float* query_embedding) const {
     CombinedResult result;
 
-    if (!hnsw_index_ || !chunk_store_) return result;
+    if (!chunk_store_) return result;
+    if (q.retrieval_mode != RetrievalMode::Bm25 && (!hnsw_index_ || !query_embedding)) return result;
 
-    // Step 1: KNN search with over-fetch
+    // Step 1: candidate generation, per retrieval mode.
     int over_fetch = q.top_k * static_cast<int>(HNSW_OVER_FETCH_FACTOR);
-    auto raw_candidates = hnsw_index_->knnSearch(query_embedding, over_fetch);
+    std::vector<std::pair<uint64_t, float>> raw_candidates;
+
+    if (q.retrieval_mode != RetrievalMode::Bm25) {
+        raw_candidates = hnsw_index_->knnSearch(query_embedding, over_fetch);
+    }
+
+    if (q.retrieval_mode != RetrievalMode::Vector &&
+        lexical_index_ && !q.text_query.empty()) {
+        // Lexical candidates. Union with vector candidates in Hybrid mode:
+        // an exact rare-term match is retrievable even when its embedding
+        // is not among the nearest vectors. Cosine distance for these is
+        // computed against the stored embedding so the ranker sees honest
+        // vector scores for every candidate.
+        auto lexical = lexical_index_->search(q.text_query, over_fetch);
+        std::unordered_set<uint64_t> seen;
+        for (const auto& [cid, dist] : raw_candidates) seen.insert(cid);
+        for (const auto& [cid, bm25] : lexical) {
+            if (seen.count(cid)) continue;
+            float dist = 1.0f; // worst-case cosine distance when no embedding available
+            ChunkNode chunk;
+            if (query_embedding && chunk_store_->get(cid, chunk)) {
+                dist = cosineDistance(query_embedding, chunk.embedding, EMBEDDING_DIM);
+            }
+            raw_candidates.push_back({cid, dist});
+        }
+    }
 
     // Step 2: Apply relational filter if set
     if (q.has_filter && obj_store_ && rel_index_) {
@@ -33,28 +59,44 @@ CombinedResult QueryEngine::query(const CombinedQuery& q, const float* query_emb
         for (const auto& obj : matching_objects) {
             if (obj.contains("id")) {
                 uint64_t obj_id = obj["id"].get<uint64_t>();
-                // Check all relation types for links
-                auto targets = rel_index_->getTargets("sourceDocument", obj_id);
+                auto targets = rel_index_->getTargets(q.filter_relation, obj_id);
                 allowed_chunks.insert(targets.begin(), targets.end());
-                auto sources = rel_index_->getSources("sourceDocument", obj_id);
+                auto sources = rel_index_->getSources(q.filter_relation, obj_id);
                 allowed_chunks.insert(sources.begin(), sources.end());
             }
         }
 
-        // Filter candidates
-        if (!allowed_chunks.empty()) {
-            std::vector<std::pair<uint64_t, float>> filtered;
-            for (const auto& [cid, dist] : raw_candidates) {
-                if (allowed_chunks.count(cid)) {
-                    filtered.push_back({cid, dist});
-                }
+        // The filter is authoritative: when it yields no linked chunks the
+        // result set is empty, never silently unfiltered.
+        std::vector<std::pair<uint64_t, float>> filtered;
+        for (const auto& [cid, dist] : raw_candidates) {
+            if (allowed_chunks.count(cid)) {
+                filtered.push_back({cid, dist});
             }
-            raw_candidates = filtered;
         }
+        raw_candidates = filtered;
     }
 
-    // Step 3: Hybrid re-rank
-    if (ranker_) {
+    // Step 3: rank. Pure BM25 mode keeps the lexical ordering (tf-idf) —
+    // the hybrid ranker's signals assume an embedding exists.
+    if (q.retrieval_mode == RetrievalMode::Bm25) {
+        auto lexical = lexical_index_ ? lexical_index_->search(q.text_query, q.top_k)
+                                      : std::vector<std::pair<uint64_t, float>>{};
+        float best = lexical.empty() ? 1.0f : std::max(1e-6f, lexical[0].second);
+        for (const auto& [cid, bm25] : lexical) {
+            ChunkNode chunk;
+            if (!chunk_store_->get(cid, chunk)) continue;
+            QueryResult qr;
+            qr.chunk_id = cid;
+            qr.score = bm25 / best; // normalised to [0,1]
+            qr.keyword_score = qr.score;
+            qr.doc_id = chunk.doc_id;
+            qr.page_number = chunk.page_number;
+            std::memcpy(qr.text, chunk.text, MAX_TEXT_LEN);
+            qr.text[MAX_TEXT_LEN - 1] = '\0';
+            result.chunks.push_back(qr);
+        }
+    } else if (ranker_) {
         RankerInput ri;
         ri.hnsw_results = raw_candidates;
         ri.query_embedding = query_embedding;
