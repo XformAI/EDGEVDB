@@ -3,6 +3,35 @@
 > All numbers collected on real hardware with real benchmark executables from `build/desktop-release/tests/`.
 > No synthetic projections or placeholder targets — every value below is a measured result.
 
+## v0.2.0 update (2026-07-10)
+
+Re-measured after the 0.2.0 correctness release (GCC 15.2 MSYS2, `-O3 -DNDEBUG`,
+different machine state than the original run below — compare within this section only):
+
+| Metric (10k chunks, 384-dim, default config) | Measured |
+|---|---:|
+| Query latency (C++ native, top_k=5) | 1.95 ms avg (0.83 min / 3.83 max) |
+| Insert throughput (C++ native) | 231 chunks/sec |
+
+Insert throughput is lower than the v0.1.0 table below primarily because inserts
+now maintain enforced integrity state and the concurrent-safe visited pool; the
+0.1.0 numbers also predate the data-race fix, so they were measured on an index
+whose concurrent reads were unsound.
+
+### Opt-in algorithm modes — A/B recall (clustered Gaussian mixture, 20 clusters × 100 pts, brute-force ground truth, `tests/test_ab_recall.cpp`)
+
+| Mode | Recall@5 | Baseline | Delta |
+|---|---:|---:|---:|
+| Original (simple selection, fixed ef, float32) | 0.753 | — | — |
+| `hnsw_use_heuristic_selection` (diversity, Alg. 4) | 0.773 | 0.753 | **+2.0 pts** |
+| `hnsw_adaptive_ef` (difficulty-adaptive beam) | 0.900 | 0.753 | **+14.7 pts** |
+| `hnsw_quantized_search` (int8 traversal, 2× beam, exact re-rank) | 0.903 | 0.753 | **+15.0 pts** |
+
+All modes default **off**; enabling any of them triggers a <100 ms runtime
+self-check at `evdb_open` that falls back to the original algorithm if the mode
+regresses recall on synthetic data (`core/src/self_check.hpp`). These gates run
+in CI via `test_ab_recall`.
+
 ## Test Environment
 
 | Component | Details |
@@ -294,4 +323,4 @@ cd android
 
 ---
 
-*Report generated from EdgeVDB v1.0.0 release build. All values are single-run measurements — for statistical significance, run each benchmark 5+ times and report medians.*
+*Report generated from EdgeVDB v0.1.0 release build. All values are single-run measurements — for statistical significance, run each benchmark 5+ times and report medians.*

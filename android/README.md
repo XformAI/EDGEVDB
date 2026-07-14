@@ -59,7 +59,29 @@ The EdgeVDB Android SDK provides a complete on-device vector database solution f
 
 ### 1. Add Dependency
 
-**Option A: Local AAR (from build)**
+**Option A: GitHub Packages (Recommended)**
+
+```kotlin
+// settings.gradle.kts — add the repository
+repositories {
+    maven {
+        url = uri("https://maven.pkg.github.com/XformAI/EDGEVDB")
+        credentials {
+            username = project.findProperty("gpr.user") as String?
+            password = project.findProperty("gpr.token") as String?
+        }
+    }
+}
+
+// build.gradle.kts
+dependencies {
+    implementation("in.xformai:edgevdb-android:0.2.0")
+}
+```
+
+> Add `gpr.user` and `gpr.token` (GitHub personal access token with `read:packages` scope) to `~/.gradle/gradle.properties`.
+
+**Option B: Local AAR (from source)**
 
 ```kotlin
 // settings.gradle.kts
@@ -69,15 +91,6 @@ project(":edgevdb").projectDir = file("../edgevdb/android/sdk")
 // app/build.gradle.kts
 dependencies {
     implementation(project(":edgevdb"))
-}
-```
-
-**Option B: Maven Central (after publishing)**
-
-```kotlin
-// build.gradle.kts
-dependencies {
-    implementation("ai.edgevdb:edgevdb-android:1.0.0")
 }
 ```
 

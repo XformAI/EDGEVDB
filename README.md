@@ -7,7 +7,9 @@
 **Built by [XformAI](https://www.xformai.in/) — Transforming AI for the Real World**
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-1.0.0-green.svg)]()
+[![Version](https://img.shields.io/badge/version-0.2.0-green.svg)]()
+[![PyPI](https://img.shields.io/pypi/v/edgevdb.svg)](https://pypi.org/project/edgevdb/)
+[![Android](https://img.shields.io/badge/android-GitHub%20Packages-brightgreen.svg)](https://github.com/XformAI/EDGEVDB/packages)
 [![C++17](https://img.shields.io/badge/C%2B%2B-17-orange.svg)]()
 [![Platforms](https://img.shields.io/badge/platforms-Android%20%7C%20iOS%20%7C%20Desktop-lightgrey.svg)]()
 [![Docs](https://img.shields.io/badge/docs-edgevdb.xformai.in-6366f1.svg)](https://xformai.github.io/EDGEVDB/)
@@ -18,7 +20,16 @@
 
 ---
 
-> **Embeddable cross-platform vector database with HNSW ANN, hybrid retrieval, knowledge graph, relational object store, and CRDT-based sync — all in a single zero-dependency C++ library.**
+> **Embeddable cross-platform vector database with HNSW ANN, hybrid retrieval, knowledge graph, relational object store, and LWW logical-clock sync — all in a single zero-dependency C++ library.**
+
+### What's new in 0.2.0
+
+- **Integrity & durability**: real (enforced) CRC-32 on every store, crash-safe atomic saves (temp file + rename), bounds-validated loaders, automatic HNSW rebuild from the chunk store on index corruption.
+- **Concurrency**: per-query visited-list pool — concurrent `query_vector` calls are now genuinely race-free.
+- **Correct sync**: logical clocks (not wall time), device-partitioned chunk IDs that survive replication, delete tombstones, idempotent delta application; replicas provably converge (see `tests/test_sync_convergence.cpp`).
+- **Opt-in retrieval upgrades** (all default-off, A/B tested, auto-fallback if they ever regress on your data):
+  `hnsw_use_heuristic_selection` (diversity neighbor selection, HNSW Alg. 4), `hnsw_adaptive_ef` (difficulty-adaptive beam, **+14% recall@5** on clustered data), `hnsw_quantized_search` (int8 traversal + exact re-rank, **+15% recall@5** at 2× beam with ~4× cheaper distances), `ranker_mode=1/2` (RRF / knowledge-graph-boosted RRF fusion).
+- **Honesty**: the built-in embedder without ONNX Runtime is a deterministic **hash fallback for testing only** — it is not semantic. Check `evdb_embedder_is_semantic()` / `Embedder.is_semantic`; use pre-computed embeddings (`insert_chunk`/`query_vector`) for production search.
 
 ## Why EdgeVDB?
 
@@ -34,12 +45,14 @@
 | Feature | Description |
 |---|---|
 | **HNSW ANN Index** | 384-dim float32 vectors, M=16, ef=200/64 |
-| **Hybrid Retrieval** | α·cosine + β·page_proximity + γ·keyword |
+| **Hybrid Retrieval** | Vector ∪ BM25 candidate union → α·cosine + β·page_proximity + γ·keyword (or RRF fusion) |
+| **Retrieval Modes** | `hybrid` (default) / `vector`-only / `bm25`-only — BM25 needs no embedding model |
+| **BM25 Lexical Index** | In-memory inverted index; 50k chunks build in 0.7 s, query in 0.09 ms |
 | **Knowledge Graph** | On-device NER → entity graph → multi-hop expansion |
 | **Embedding Pipeline** | Optional — bring your own embeddings or use built-in |
 | **Object Store** | Schema-less NoSQL with typed property indexing |
 | **Relation Index** | Foreign key edges between objects |
-| **CRDT Sync** | LWW vector clock sync across devices |
+| **Sync** | Convergent LWW replication — logical clocks, tombstones, device-partitioned IDs |
 | **Stable C API** | `vectordb.h` — single header, ABI-stable |
 | **Platform SDKs** | Android (JNI/Kotlin), iOS (Swift), Python (ctypes) |
 | **Zero Dependencies** | ONNX Runtime is optional — core works everywhere |
@@ -84,13 +97,13 @@ with EdgeVDB("./data") as db:
 
 #### Android (Kotlin)
 ```kotlin
-val db = EdgeVDB.open(context)
+val db = EdgeVDB.open(context, dbPath = context.filesDir.resolve("edgevdb").path)
 val embedding: FloatArray = yourProvider.embed("Neural networks classify images")
-val chunkId = db.insertChunk(embedding, "Neural networks classify images", docId = 1, pageNumber = 0)
+val chunk = DocumentChunk(text = "Neural networks classify images", docId = "doc-1", page = 0)
+val chunkId = db.insertChunk(chunk, embedding)
 
-db.queryVector(embedding, "image classification", topK = 5).use { results ->
-    results.toList().forEach { println("${it.score}: ${it.text}") }
-}
+val results = db.queryVector(embedding, topK = 5, queryText = "image classification")
+results.forEach { println("${it.score}: ${it.text}") }
 db.close()
 ```
 
@@ -133,7 +146,26 @@ evdb_query_free(q);
 evdb_close(db);
 ```
 
-### With Built-in Embedder (ONNX optional)
+### With Built-in Embedder (real ONNX inference)
+
+The core loads **ONNX Runtime dynamically at startup** — no link-time
+dependency, so the zero-dependency guarantee stands. If the ORT shared
+library is found (default library search path, or pointed to via the
+`EDGEVDB_ORT_LIBRARY` environment variable) and the model loads, `Embedder`
+runs real MiniLM inference: WordPiece tokenization → transformer forward
+pass → attention-masked mean pooling → L2 normalization. Verified by
+`tests/test_onnx_semantic.cpp` (paraphrases beat lexical-overlap distractors,
+0.61 vs 0.13 cosine).
+
+> ⚠️ If ONNX Runtime is **not** available, the embedder falls back to a
+> deterministic hash embedding — stable, but **not semantic** — and logs a
+> loud warning. Check `Embedder.is_semantic` / `evdb_embedder_is_semantic()`.
+> Production search without ORT should use pre-computed embeddings via
+> `insert_chunk`/`query_vector` (above).
+
+Get the model: fetch `sentence-transformers/all-MiniLM-L6-v2`
+(`onnx/model.onnx`) from Hugging Face into `models/` — see
+`tools/download_model.py`.
 
 ```python
 from edgevdb import EdgeVDB, Embedder
@@ -145,7 +177,109 @@ with EdgeVDB("./data") as db:
     print(results.context_string)
 ```
 
-## Building
+## Installation
+
+### Python (PyPI)
+
+```bash
+pip install edgevdb
+```
+
+```python
+from edgevdb import EdgeVDB
+with EdgeVDB("./data") as db:
+    print("EdgeVDB ready!")
+```
+
+### Android (GitHub Packages)
+
+```kotlin
+// settings.gradle.kts — add the repository
+repositories {
+    maven {
+        url = uri("https://maven.pkg.github.com/XformAI/EDGEVDB")
+        credentials {
+            username = project.findProperty("gpr.user") as String?
+            password = project.findProperty("gpr.token") as String?
+        }
+    }
+}
+
+// build.gradle.kts
+dependencies {
+    implementation("in.xformai:edgevdb-android:0.2.0")
+}
+```
+
+> Requires a GitHub personal access token with `read:packages` scope. Add `gpr.user` and `gpr.token` to your `~/.gradle/gradle.properties`.
+
+## Developer Quick Start
+
+All commands from the repo root. Windows: use an MSYS2/MinGW or WSL shell.
+
+```bash
+# Build + run every test (14 suites)
+cmake --preset desktop-debug && cmake --build build/desktop-debug -j
+ctest --test-dir build/desktop-debug --output-on-failure
+
+# Release build + benchmarks
+cmake --preset desktop-release && cmake --build build/desktop-release -j
+./build/desktop-release/tests/bench_query          # latency @10k
+./build/desktop-release/tests/bench_scale 50000    # latency/recall/memory up to 50k
+./build/desktop-release/tests/bench_scale 50000 ha 256  # with heuristic+adaptive modes, ef=256
+```
+
+### Pick a retrieval mode (Python)
+
+```python
+from edgevdb import EdgeVDB
+
+# BM25 only — zero-model lexical search, works out of the box
+with EdgeVDB("./data", retrieval_mode=2) as db:
+    db.insert_chunk("the zephyrium alloy datasheet", [0.0]*384, doc_id=1)
+    results = db.query_bm25("zephyrium datasheet", top_k=5)   # no embedder needed
+    print(results[0].text)
+
+# Semantic only (bring embeddings, or use the ONNX Embedder)
+db = EdgeVDB("./data", retrieval_mode=1)
+
+# Hybrid (default): vector ∪ BM25 union, best quality
+db = EdgeVDB("./data")  # retrieval_mode=0
+```
+
+### Turn features on/off
+
+```python
+EdgeVDB("./data",
+    retrieval_mode=0,               # 0 hybrid | 1 vector | 2 bm25
+    enable_page_index=0,            # skip page-proximity indexing entirely
+    enable_knowledge_graph=0,       # skip NER/graph
+    ranker_mode=2, rrf_k=60.0,      # 0 linear | 1 RRF | 2 graph-boosted RRF
+    hnsw_use_heuristic_selection=1, # diversity neighbor selection
+    hnsw_adaptive_ef=1,             # widen beam only on hard queries
+    hnsw_quantized_search=1,        # int8 traversal + exact re-rank
+    hnsw_ef_search=256,             # quality/latency dial at scale
+)   # every novel mode auto-falls-back if it regresses recall on open
+```
+
+### Real ONNX embeddings (C API identical via `EvdbConfig`)
+
+```bash
+pip install onnxruntime           # or any ORT distribution
+# fetch sentence-transformers/all-MiniLM-L6-v2 onnx/model.onnx into models/
+export EDGEVDB_ORT_LIBRARY=/path/to/onnxruntime.{dll,so,dylib}  # if not on default path
+```
+
+```python
+from edgevdb import EdgeVDB, Embedder
+with EdgeVDB("./data") as db:
+    e = Embedder("models/model.onnx", "models/vocab.txt")
+    assert e.is_semantic          # False = hash fallback (test-only!)
+    db.insert_text(e, "Photosynthesis converts sunlight into glucose.", doc_id=1)
+    print(db.query_text(e, "how do plants make food", top_k=3)[0].text)
+```
+
+### Building from Source
 
 ```bash
 # Desktop (Linux/macOS/WSL)
@@ -204,18 +338,6 @@ We welcome contributions! Here's how to get started:
 5. Open a Pull Request
 
 Please read the [Developer Guide](DEVELOPER_GUIDE.md) for coding conventions and build setup.
-
-
-
-## Documentation
-
-- [**Developer Guide**](DEVELOPER_GUIDE.md) — Building, integration, publishing
-- [Architecture](docs/architecture.md) — System design and data flow
-- [API Reference](docs/api_reference.md) — Complete C API documentation
-- [Android Integration](docs/android_integration.md)
-- [iOS Integration](docs/ios_integration.md)
-- [Python Integration](docs/python_integration.md)
-
 
 ## License
 

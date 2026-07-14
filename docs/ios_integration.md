@@ -19,13 +19,13 @@ Add EdgeVDB as a Swift Package dependency.
 **Via Xcode:**
 1. File → Add Package Dependencies
 2. Enter URL: `https://github.com/edgevdb/edgevdb.git`
-3. Select version: `1.0.0` or main branch
+3. Select version: `0.2.0` or main branch
 
 **Via Package.swift:**
 ```swift
 // Package.swift
 dependencies: [
-    .package(url: "https://github.com/edgevdb/edgevdb.git", from: "1.0.0")
+    .package(url: "https://github.com/XformAI/EDGEVDB.git", from: "0.2.0")
 ]
 ```
 

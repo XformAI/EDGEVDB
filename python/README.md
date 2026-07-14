@@ -11,9 +11,31 @@ The EdgeVDB Python SDK provides a Pythonic interface to the EdgeVDB C++ core lib
 - **Type Hints** — Full type annotations for IDE support
 - **Zero Python Dependencies** — Only standard library and ctypes
 - **Cross-Platform** — Linux, macOS, Windows, Raspberry Pi
-- **Flexible Embedding** — Use any embedding provider or built-in ONNX embedder
+- **Flexible Embedding** — Use any embedding provider, or the built-in embedder with real ONNX Runtime inference (dynamically loaded; check `Embedder.is_semantic`)
+- **Retrieval Modes (0.2.0)** — `retrieval_mode=0` hybrid (vector ∪ BM25, default), `1` vector-only, `2` BM25-only; `db.query_bm25(text)` needs no embedding model at all
+- **Tunable RAG stack (0.2.0)** — `enable_page_index`, `ranker_mode` (linear/RRF/graph-RRF), opt-in HNSW modes (`hnsw_use_heuristic_selection`, `hnsw_adaptive_ef`, `hnsw_quantized_search`) with automatic recall-guarded fallback
+- **Multi-Device Sync** — `edgevdb.sync.SyncHelper` file-based delta exchange
+
+### 30-second example
+
+```python
+from edgevdb import EdgeVDB
+
+# Lexical search, zero models required:
+with EdgeVDB("./data", retrieval_mode=2) as db:
+    db.insert_chunk("the zephyrium alloy datasheet", [0.0] * 384, doc_id=1)
+    print(db.query_bm25("zephyrium", top_k=3)[0].text)
+```
 
 ## Installation
+
+### From PyPI (Recommended)
+
+```bash
+pip install edgevdb
+```
+
+Pre-built wheels include native libraries for **Linux** (x86_64, glibc 2.28+), **macOS** (arm64/x86_64), and **Windows** (x86_64).
 
 ### From Source
 
@@ -34,12 +56,6 @@ cp build/desktop-release/core/libedgevdb_shared.so python/edgevdb/lib/linux/
 # Install in development mode
 cd python
 pip install -e .
-```
-
-### From PyPI (after publishing)
-
-```bash
-pip install edgevdb
 ```
 
 ## Quick Start

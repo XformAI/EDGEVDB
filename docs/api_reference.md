@@ -620,7 +620,7 @@ printf("Current clock: %llu\n", clock);
 Get version string.
 
 **Returns:**
-- Version string (e.g., "1.0.0")
+- Version string (e.g., "0.2.0")
 
 **Example:**
 ```c
@@ -713,8 +713,55 @@ int main() {
 }
 ```
 
+## New in 0.2.0
+
+### Config additions (appended to `EvdbConfig`, all default to original behaviour)
+
+```c
+int   hnsw_use_heuristic_selection; /* diversity neighbour selection (HNSW Alg. 4) */
+int   hnsw_adaptive_ef;             /* widen beam only on hard queries */
+int   hnsw_quantized_search;        /* int8 traversal + exact float re-rank */
+int   ranker_mode;                  /* 0 linear | 1 RRF | 2 graph-boosted RRF */
+float rrf_k;                        /* RRF constant, default 60.0 */
+int   enable_self_check;            /* auto-fallback micro-benchmark at open, default 1 */
+int   retrieval_mode;               /* 0 hybrid (vector ∪ BM25) | 1 vector | 2 bm25 */
+int   enable_page_index;            /* 0 skips page indexing entirely, default 1 */
+```
+
+### New functions
+
+```c
+/* Pure BM25 lexical query — requires NO embedder or model. */
+EvdbQueryHandle* evdb_query_lexical(EvdbHandle* h, const char* query_text, int top_k);
+
+/* 1 = real ONNX inference active; 0 = deterministic hash fallback (test-only). */
+int evdb_embedder_is_semantic(EvdbEmbedder* e);
+
+/* Required buffer size (incl. NUL) for evdb_object_get; 0 if not found. */
+int evdb_object_get_size(EvdbHandle* h, uint64_t id);
+```
+
+### New error code
+
+| Code | Name | Description |
+|------|------|-------------|
+| 8 | `EVDB_ERR_BUFFER_TOO_SMALL` | Output buffer too small; nothing written — query the size and retry |
+
+`evdb_object_get` / `evdb_object_query` / `evdb_sync_export_delta` now return
+this instead of silently truncating JSON.
+
+### ONNX Runtime discovery
+
+The embedder loads ONNX Runtime dynamically at `evdb_embedder_create`: it
+tries the `EDGEVDB_ORT_LIBRARY` environment variable first, then the
+platform-default library name (`onnxruntime.dll` / `libonnxruntime.so` /
+`libonnxruntime.dylib`). With ORT and a MiniLM model present, `evdb_embed_text`
+performs real transformer inference; otherwise it uses the hash fallback and
+logs a warning.
+
 ## See Also
 
 - [architecture.md](architecture.md) — Architecture overview
+- [../CHANGELOG.md](../CHANGELOG.md) — Release notes
 - [../core/include/README.md](../core/include/README.md) — Public API headers
 - [../README.md](../README.md) — Project overview

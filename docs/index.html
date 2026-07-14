@@ -4,11 +4,11 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>EdgeVDB — On-Device Vector Database SDK by XformAI</title>
-    <meta name="description" content="EdgeVDB is a zero-dependency, embeddable cross-platform vector database with HNSW ANN, hybrid retrieval, knowledge graph, and CRDT sync — all in a single C++ library. Built by XformAI." />
+    <meta name="description" content="EdgeVDB is a zero-dependency, embeddable cross-platform vector database with HNSW ANN, hybrid vector + BM25 retrieval, knowledge graph, real ONNX embeddings, and convergent multi-device sync — all in a single C++ library. Built by XformAI." />
     <meta name="keywords" content="EdgeVDB, vector database, HNSW, on-device AI, RAG, XformAI, C++ SDK, Android, iOS, Python, edge computing" />
     <meta name="author" content="XformAI" />
     <meta property="og:title" content="EdgeVDB — On-Device Vector Database SDK" />
-    <meta property="og:description" content="Embeddable cross-platform vector database with HNSW ANN, hybrid retrieval, knowledge graph, and CRDT sync." />
+    <meta property="og:description" content="Embeddable cross-platform vector database with HNSW ANN, hybrid vector + BM25 retrieval, knowledge graph, and convergent sync." />
     <meta property="og:type" content="website" />
 
     <!-- Fonts -->
@@ -56,7 +56,7 @@
         <div class="hero-content">
             <div class="hero-badge">
                 <span class="badge-dot"></span>
-                <span>Open Source · Apache 2.0</span>
+                <span>v0.2.0 · Open Source · Apache 2.0</span>
             </div>
             <h1 class="hero-title">
                 On-Device <span class="gradient-text">Vector Database</span>
@@ -68,8 +68,8 @@
                 </a> — Transforming AI for the Real World
             </p>
             <p class="hero-subtitle">
-                Embeddable cross-platform vector database with HNSW ANN, hybrid retrieval,
-                knowledge graph, relational object store, and CRDT-based sync —
+                Embeddable cross-platform vector database with HNSW ANN, hybrid vector + BM25 retrieval,
+                knowledge graph, relational object store, and convergent multi-device sync —
                 all in a single <strong>zero-dependency C++ library</strong>.
             </p>
             <div class="hero-stats">
@@ -113,8 +113,8 @@
                 <div class="install-code-wrapper">
                     <pre class="install-code" id="install-code-python"><code>pip install edgevdb</code></pre>
                     <pre class="install-code hidden" id="install-code-cpp"><code>cmake --preset desktop-release && cmake --build build/desktop-release</code></pre>
-                    <pre class="install-code hidden" id="install-code-kotlin"><code>implementation("ai.edgevdb:edgevdb-android:1.0.0")</code></pre>
-                    <pre class="install-code hidden" id="install-code-swift"><code>.package(url: "https://github.com/XformAI/EDGEVDB.git", from: "1.0.0")</code></pre>
+                    <pre class="install-code hidden" id="install-code-kotlin"><code>implementation("in.xformai:edgevdb-android:0.2.0")</code></pre>
+                    <pre class="install-code hidden" id="install-code-swift"><code>.package(url: "https://github.com/XformAI/EDGEVDB.git", from: "0.2.0")</code></pre>
                     <button class="copy-btn" id="copy-install-btn" aria-label="Copy to clipboard">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
                     </button>
@@ -157,8 +157,8 @@
                             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 6h16M4 12h10M4 18h14"/><circle cx="19" cy="12" r="3"/></svg>
                         </div>
                     </div>
-                    <h3>Hybrid Retrieval</h3>
-                    <p>α·cosine + β·page proximity + γ·keyword overlap for multi-factor ranking that beats pure vector search.</p>
+                    <h3>Hybrid Retrieval + BM25</h3>
+                    <p>Union of HNSW vector search and a real BM25 lexical index, re-ranked by α·cosine + β·page proximity + γ·keyword (or RRF fusion). Choose <code>hybrid</code>, <code>vector</code>, or <code>bm25</code> mode — BM25 needs no embedding model at all.</p>
                 </div>
                 <div class="feature-card" id="feature-kg">
                     <div class="feature-icon-wrap">
@@ -176,7 +176,7 @@
                         </div>
                     </div>
                     <h3>Embedding Pipeline</h3>
-                    <p>Bring your own embeddings from OpenAI, Cohere, or any provider — or use the optional built-in ONNX embedder.</p>
+                    <p>Bring embeddings from any provider, or use the built-in embedder with real <strong>ONNX Runtime inference</strong> (dynamically loaded — no link-time dependency). Falls back to a clearly-flagged non-semantic hash when ORT is absent.</p>
                 </div>
                 <div class="feature-card" id="feature-store">
                     <div class="feature-icon-wrap">
@@ -193,8 +193,8 @@
                             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7 16V4m0 0L3 8m4-4l4 4M17 8v12m0 0l4-4m-4 4l-4-4"/></svg>
                         </div>
                     </div>
-                    <h3>CRDT Sync</h3>
-                    <p>Last-Writer-Wins vector clock sync engine for seamless multi-device replication with automatic conflict resolution.</p>
+                    <h3>Convergent Sync</h3>
+                    <p>Last-Writer-Wins replication with logical clocks, device-partitioned IDs, and delete tombstones. Replicas provably converge under bidirectional delta exchange.</p>
                 </div>
                 <div class="feature-card" id="feature-api">
                     <div class="feature-icon-wrap">
@@ -273,7 +273,7 @@
                         <div class="arch-block arch-core-block" data-tooltip="α·cosine + β·page + γ·keyword multi-factor ranking">
                             <span>Hybrid Ranker</span>
                         </div>
-                        <div class="arch-block arch-core-block" data-tooltip="CRDT-based Last-Writer-Wins sync with vector clocks">
+                        <div class="arch-block arch-core-block" data-tooltip="Convergent Last-Writer-Wins sync with logical clocks, tombstones, device-partitioned IDs">
                             <span>Sync Engine</span>
                         </div>
                         <div class="arch-block arch-core-block" data-tooltip="Token budget management for LLM context assembly">

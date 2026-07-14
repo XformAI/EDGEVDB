@@ -60,7 +60,7 @@ The EdgeVDB iOS SDK provides a complete on-device vector database solution for i
 ```swift
 // Package.swift or Xcode → File → Add Package Dependencies
 dependencies: [
-    .package(url: "https://github.com/edgevdb/edgevdb.git", from: "1.0.0")
+    .package(url: "https://github.com/XformAI/EDGEVDB.git", from: "0.2.0")
 ]
 ```
 
