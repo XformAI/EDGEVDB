@@ -115,3 +115,6 @@ ENV/
 AGENTS.md
 CLAUDE.md
 /python=3.10
+CHANGELOG.md
+EdgeVDB_Paper.docx
+EdgeVDB_Repository_Audit_Report.docx
