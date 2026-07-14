@@ -17,9 +17,11 @@
 #include "embedder.hpp"
 #include "object_store.hpp"
 #include "relation_index.hpp"
+#include "lexical_index.hpp"
 #include "query_engine.hpp"
 #include "sync_engine.hpp"
 #include "token_budget.hpp"
+#include "self_check.hpp"
 #include "log.hpp"
 
 #include <memory>
@@ -42,9 +44,13 @@ struct EvdbHandle_ {
     std::unique_ptr<KGExpander>     kg_expander;
     std::unique_ptr<ObjectStore>    obj_store;
     std::unique_ptr<RelationIndex>  rel_index;
+    std::unique_ptr<LexicalIndex>   lexical_index;
     std::unique_ptr<QueryEngine>    query_engine;
     EvdbConfig config;
     std::string storage_dir;
+    // Set while a sync engine is attached (see evdb_sync_create). The sync
+    // engine must be destroyed before the handle is closed.
+    SyncEngine* sync = nullptr;
 };
 
 struct EvdbEmbedder_ {
@@ -58,6 +64,7 @@ struct EvdbQueryHandle_ {
 
 struct EvdbSyncEngine_ {
     std::unique_ptr<SyncEngine> engine;
+    EvdbHandle_* owner = nullptr;
 };
 
 // ── Helper ────────────────────────────────────────────────
@@ -88,6 +95,24 @@ void evdb_default_config(EvdbConfig* out) {
     out->enable_knowledge_graph = 1;
     out->enable_sync = 0;
     out->device_id = nullptr;
+    // Novel algorithm modes default OFF: original algorithms remain the
+    // shipped defaults. Self-check guards any mode the caller enables.
+    out->hnsw_use_heuristic_selection = 0;
+    out->hnsw_adaptive_ef = 0;
+    out->hnsw_quantized_search = 0;
+    out->ranker_mode = 0;
+    out->rrf_k = 60.0f;
+    out->enable_self_check = 1;
+    out->retrieval_mode = 0; // hybrid (vector ∪ BM25)
+    out->enable_page_index = 1;
+}
+
+static RetrievalMode retrievalModeFromConfig(int mode) {
+    switch (mode) {
+        case 1: return RetrievalMode::Vector;
+        case 2: return RetrievalMode::Bm25;
+        default: return RetrievalMode::Hybrid;
+    }
 }
 
 EvdbHandle* evdb_open(const EvdbConfig* config) {
@@ -98,32 +123,82 @@ EvdbHandle* evdb_open(const EvdbConfig* config) {
         h->config = *config;
         h->storage_dir = config->storage_dir;
 
+        // Ensure the storage directory exists — otherwise every save would
+        // silently fail on a fresh install.
+        if (!persist::ensureDir(h->storage_dir)) {
+            EVDB_LOG_ERROR("EdgeVDB: cannot create storage dir '%s'", h->storage_dir.c_str());
+            delete h;
+            return nullptr;
+        }
+
+        // Automatic fallback: when any novel HNSW mode is enabled, a fast
+        // micro-benchmark compares it against the original algorithm and
+        // disables any mode that regresses recall (see self_check.hpp).
+        if (h->config.enable_self_check) {
+            selfcheck::validateModes(h->config.hnsw_use_heuristic_selection,
+                                     h->config.hnsw_adaptive_ef,
+                                     h->config.hnsw_quantized_search);
+        }
+        const EvdbConfig* cfg = &h->config;
+        config = cfg;
+
         h->chunk_store = std::make_unique<ChunkStore>(pathJoin(h->storage_dir, "chunks.bin"));
         h->hnsw_index = std::make_unique<HNSWIndex>(
             pathJoin(h->storage_dir, "hnsw.bin"),
             config->hnsw_M, config->hnsw_ef_construction, config->hnsw_ef_search);
-        h->page_index = std::make_unique<PageIndex>(pathJoin(h->storage_dir, "page.bin"));
+        if (config->enable_page_index) {
+            h->page_index = std::make_unique<PageIndex>(pathJoin(h->storage_dir, "page.bin"));
+        }
         h->ranker = std::make_unique<HybridRanker>(
             config->ranker_alpha, config->ranker_beta, config->ranker_gamma);
         h->kg_extractor = std::make_unique<KGExtractor>();
         h->kg = std::make_unique<KnowledgeGraph>(pathJoin(h->storage_dir, "kg.bin"));
+
+        // Optional ranking mode (0 = original linear blend).
+        if (config->ranker_mode == 1) {
+            h->ranker->setMode(RankerMode::RRF, config->rrf_k);
+        } else if (config->ranker_mode == 2) {
+            h->ranker->setMode(RankerMode::GraphRRF, config->rrf_k);
+            h->ranker->setKnowledgeGraph(h->kg.get(), h->kg_extractor.get());
+        }
         h->kg_expander = std::make_unique<KGExpander>(
             h->kg.get(), h->kg_extractor.get(), h->chunk_store.get());
         h->obj_store = std::make_unique<ObjectStore>(pathJoin(h->storage_dir, "objects.bin"));
         h->rel_index = std::make_unique<RelationIndex>();
+        h->lexical_index = std::make_unique<LexicalIndex>();
 
         h->query_engine = std::make_unique<QueryEngine>(
             h->chunk_store.get(), h->hnsw_index.get(), h->page_index.get(),
             h->ranker.get(), h->kg_extractor.get(), h->kg.get(), h->kg_expander.get(),
             h->obj_store.get(), h->rel_index.get());
+        h->query_engine->setLexicalIndex(h->lexical_index.get());
+
+        // Apply optional algorithm modes before any graph construction so
+        // rebuild/inserts use the selected neighbor-selection strategy.
+        h->hnsw_index->setHeuristicSelection(config->hnsw_use_heuristic_selection != 0);
+        h->hnsw_index->setAdaptiveEf(config->hnsw_adaptive_ef != 0);
 
         // Open all stores
         h->chunk_store->open();
-        h->hnsw_index->open();
-        h->page_index->open();
+        if (!h->hnsw_index->open()) {
+            // Recovery path: chunk store retains embeddings, so a corrupt or
+            // outdated index file can always be rebuilt instead of failing.
+            EVDB_LOG_ERROR("EdgeVDB: HNSW index load failed — rebuilding from chunk store");
+            h->hnsw_index->rebuildFromChunkStore(*h->chunk_store);
+        }
+        if (config->hnsw_quantized_search) {
+            h->hnsw_index->setQuantizedSearch(true);
+        }
+        if (h->page_index) h->page_index->open();
         h->kg->open();
         h->obj_store->open();
         h->rel_index->open(pathJoin(h->storage_dir, "relations.bin"));
+
+        // The BM25 index is memory-only: rebuild from the chunk store
+        // (tokenizing 50k chunks takes well under a second).
+        h->chunk_store->forEach([&](const ChunkNode& chunk) {
+            h->lexical_index->addChunk(chunk.id, chunk.text);
+        });
 
         EVDB_LOG_INFO("EdgeVDB: Opened at %s", h->storage_dir.c_str());
         return h;
@@ -146,7 +221,7 @@ EvdbError evdb_save(EvdbHandle* h) {
     try {
         h->chunk_store->save();
         h->hnsw_index->save();
-        h->page_index->save();
+        if (h->page_index) h->page_index->save();
         h->kg->save();
         h->obj_store->save();
         h->rel_index->save(pathJoin(h->storage_dir, "relations.bin"));
@@ -179,6 +254,11 @@ void evdb_embedder_destroy(EvdbEmbedder* e) {
         e->embedder->shutdown();
         delete e;
     }
+}
+
+int evdb_embedder_is_semantic(EvdbEmbedder* e) {
+    if (!e || !e->embedder) return 0;
+    return e->embedder->isSemantic() ? 1 : 0;
 }
 
 EvdbError evdb_embed_text(EvdbEmbedder* e, const char* text, float* out_384) {
@@ -233,13 +313,19 @@ EvdbError evdb_insert_chunk(EvdbHandle* h,
         h->hnsw_index->insert(id, stored.embedding);
 
         // Update page index
-        h->page_index->insert(id, doc_id, page_number);
+        if (h->page_index) h->page_index->insert(id, doc_id, page_number);
+
+        // Update BM25 lexical index
+        h->lexical_index->addChunk(id, text);
 
         // Extract entities and update KG
         if (h->config.enable_knowledge_graph) {
             auto entities = h->kg_extractor->extract(text);
             h->kg->addChunkEntities(id, entities);
         }
+
+        // Stamp the chunk with a logical sync clock when sync is attached.
+        if (h->sync) h->sync->onChunkInserted(id);
 
         if (out_chunk_id) *out_chunk_id = id;
         return EVDB_OK;
@@ -254,8 +340,10 @@ EvdbError evdb_remove_chunk(EvdbHandle* h, uint64_t chunk_id) {
     try {
         h->chunk_store->remove(chunk_id);
         h->hnsw_index->remove(chunk_id);
-        h->page_index->remove(chunk_id);
+        if (h->page_index) h->page_index->remove(chunk_id);
         h->kg->removeChunk(chunk_id);
+        h->lexical_index->removeChunk(chunk_id);
+        if (h->sync) h->sync->onChunkRemoved(chunk_id);
         return EVDB_OK;
     } catch (...) {
         return EVDB_ERR_IO;
@@ -278,6 +366,7 @@ EvdbQueryHandle* evdb_query_text(EvdbHandle* h, EvdbEmbedder* e,
         cq.top_k = top_k;
         cq.token_budget = h->config.token_budget;
         cq.use_kg_expansion = (use_kg_expansion != 0) && (h->config.enable_knowledge_graph != 0);
+        cq.retrieval_mode = retrievalModeFromConfig(h->config.retrieval_mode);
 
         auto combined = h->query_engine->query(cq, query_emb);
 
@@ -302,8 +391,30 @@ EvdbQueryHandle* evdb_query_vector(EvdbHandle* h,
         cq.top_k = top_k;
         cq.token_budget = h->config.token_budget;
         cq.use_kg_expansion = (h->config.enable_knowledge_graph != 0);
+        cq.retrieval_mode = retrievalModeFromConfig(h->config.retrieval_mode);
 
         auto combined = h->query_engine->query(cq, query_embedding_384);
+
+        auto qh = new EvdbQueryHandle_();
+        qh->results = combined.chunks;
+        qh->context_string = combined.assembled_context;
+        return qh;
+    } catch (...) {
+        return nullptr;
+    }
+}
+
+EvdbQueryHandle* evdb_query_lexical(EvdbHandle* h, const char* query_text, int top_k) {
+    if (!h || !query_text) return nullptr;
+    try {
+        CombinedQuery cq;
+        cq.text_query = query_text;
+        cq.top_k = top_k;
+        cq.token_budget = h->config.token_budget;
+        cq.use_kg_expansion = false;
+        cq.retrieval_mode = RetrievalMode::Bm25;
+
+        auto combined = h->query_engine->query(cq, nullptr);
 
         auto qh = new EvdbQueryHandle_();
         qh->results = combined.chunks;
@@ -372,11 +483,25 @@ EvdbError evdb_object_get(EvdbHandle* h, uint64_t id, char* out_json, int out_js
         nlohmann::json obj;
         if (!h->obj_store->get(id, obj)) return EVDB_ERR_NOT_FOUND;
         std::string json_str = obj.dump();
-        std::strncpy(out_json, json_str.c_str(), out_json_size - 1);
-        out_json[out_json_size - 1] = '\0';
+        if (json_str.size() + 1 > static_cast<size_t>(out_json_size)) {
+            out_json[0] = '\0';
+            return EVDB_ERR_BUFFER_TOO_SMALL;
+        }
+        std::memcpy(out_json, json_str.c_str(), json_str.size() + 1);
         return EVDB_OK;
     } catch (...) {
         return EVDB_ERR_IO;
+    }
+}
+
+int evdb_object_get_size(EvdbHandle* h, uint64_t id) {
+    if (!h) return 0;
+    try {
+        nlohmann::json obj;
+        if (!h->obj_store->get(id, obj)) return 0;
+        return static_cast<int>(obj.dump().size() + 1);
+    } catch (...) {
+        return 0;
     }
 }
 
@@ -408,8 +533,11 @@ EvdbError evdb_object_query(EvdbHandle* h, const char* type_name,
         auto arr = nlohmann::json::array();
         for (const auto& r : results) arr.push_back(r);
         std::string json_str = arr.dump();
-        std::strncpy(out_json_array, json_str.c_str(), out_size - 1);
-        out_json_array[out_size - 1] = '\0';
+        if (json_str.size() + 1 > static_cast<size_t>(out_size)) {
+            out_json_array[0] = '\0';
+            return EVDB_ERR_BUFFER_TOO_SMALL;
+        }
+        std::memcpy(out_json_array, json_str.c_str(), json_str.size() + 1);
         return EVDB_OK;
     } catch (...) {
         return EVDB_ERR_IO;
@@ -455,9 +583,31 @@ EvdbSyncEngine* evdb_sync_create(EvdbHandle* h, const char* device_id) {
     if (!h) return nullptr;
     try {
         auto s = new EvdbSyncEngine_();
-        std::string did = device_id ? device_id : "device-default";
+        std::string did = device_id ? device_id :
+            (h->config.device_id ? h->config.device_id : "device-default");
         s->engine = std::make_unique<SyncEngine>(
             did, h->obj_store.get(), h->rel_index.get(), h->chunk_store.get());
+        s->owner = h;
+        h->sync = s->engine.get();
+
+        // Keep secondary indexes in step with chunks arriving/leaving via
+        // sync, so remote chunks are searchable and deletes fully unindex.
+        EvdbHandle_* hp = h;
+        s->engine->setChunkAppliedCallback([hp](const ChunkNode& chunk) {
+            hp->hnsw_index->insert(chunk.id, chunk.embedding);
+            if (hp->page_index) hp->page_index->insert(chunk.id, chunk.doc_id, chunk.page_number);
+            hp->lexical_index->addChunk(chunk.id, chunk.text);
+            if (hp->config.enable_knowledge_graph) {
+                auto entities = hp->kg_extractor->extract(chunk.text);
+                hp->kg->addChunkEntities(chunk.id, entities);
+            }
+        });
+        s->engine->setChunkDeletedCallback([hp](uint64_t chunk_id) {
+            hp->hnsw_index->remove(chunk_id);
+            if (hp->page_index) hp->page_index->remove(chunk_id);
+            hp->kg->removeChunk(chunk_id);
+            hp->lexical_index->removeChunk(chunk_id);
+        });
         return s;
     } catch (...) {
         return nullptr;
@@ -465,6 +615,9 @@ EvdbSyncEngine* evdb_sync_create(EvdbHandle* h, const char* device_id) {
 }
 
 void evdb_sync_destroy(EvdbSyncEngine* s) {
+    if (s && s->owner && s->owner->sync == s->engine.get()) {
+        s->owner->sync = nullptr;
+    }
     delete s;
 }
 
@@ -475,8 +628,11 @@ EvdbError evdb_sync_export_delta(EvdbSyncEngine* s, uint64_t since_clock,
     try {
         auto delta = s->engine->exportDelta(since_clock);
         std::string json = delta.serialize();
-        std::strncpy(out_json, json.c_str(), out_size - 1);
-        out_json[out_size - 1] = '\0';
+        if (json.size() + 1 > static_cast<size_t>(out_size)) {
+            out_json[0] = '\0';
+            return EVDB_ERR_BUFFER_TOO_SMALL;
+        }
+        std::memcpy(out_json, json.c_str(), json.size() + 1);
         return EVDB_OK;
     } catch (...) {
         return EVDB_ERR_SYNC;
@@ -532,6 +688,7 @@ const char* evdb_error_string(EvdbError err) {
         case EVDB_ERR_INVALID_ARG: return "Invalid argument";
         case EVDB_ERR_ONNX:        return "ONNX Runtime error";
         case EVDB_ERR_SYNC:        return "Sync error";
+        case EVDB_ERR_BUFFER_TOO_SMALL: return "Output buffer too small";
         default:                   return "Unknown error";
     }
 }

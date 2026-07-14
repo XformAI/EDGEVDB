@@ -62,7 +62,7 @@ class TestEdgeVDB(unittest.TestCase):
     def test_version(self):
         from edgevdb import version
         ver = version()
-        self.assertEqual(ver, "1.0.0")
+        self.assertEqual(ver, "0.2.0")
 
     @unittest.skipUnless(_lib_available(), "Shared library not found — build first")
     def test_insert_and_query(self):

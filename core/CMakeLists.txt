@@ -77,6 +77,13 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     target_compile_options(edgevdb_shared PRIVATE -Wall -Wextra -Wno-unused-parameter)
 endif()
 
+# On MinGW, link the GCC runtime statically so the DLL is self-contained —
+# consumers (e.g. Python ctypes) would otherwise fail to load it unless the
+# MinGW bin directory is on PATH.
+if(MINGW)
+    target_link_options(edgevdb_shared PRIVATE -static-libgcc -static-libstdc++ -static)
+endif()
+
 # Platform-specific for shared library
 if(ANDROID)
     target_link_libraries(edgevdb_shared PUBLIC ${LOG_LIB} ${ANDROID_LIB})

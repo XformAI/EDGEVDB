@@ -20,5 +20,3 @@ dependencyResolutionManagement {
 rootProject.name = "EDGEVDB"
 include(":sdk")
 include(":demos:rag-demo")
-include(":demos:vectordb-demo")
-include(":demos:aar-test")

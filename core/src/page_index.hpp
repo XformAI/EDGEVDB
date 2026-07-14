@@ -36,9 +36,8 @@ private:
     mutable std::shared_mutex rw_mutex_;
 
     static constexpr char MAGIC[8] = {'E','V','D','B','P','A','G','\0'};
-    static constexpr uint32_t VERSION = 1;
-
-    uint32_t computeCRC32(const uint8_t* data, size_t len) const;
+    // v2: CRC computed with the standard CRC-32 table and enforced on load.
+    static constexpr uint32_t VERSION = 2;
 };
 
 } // namespace edgevdb

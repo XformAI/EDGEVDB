@@ -58,7 +58,6 @@ private:
     void rebuildIndices();
     void indexRecord(uint64_t id, const std::string& type_name, const nlohmann::json& props);
     void removeFromIndices(uint64_t id, const std::string& type_name);
-    uint32_t computeCRC32(const uint8_t* data, size_t len) const;
 };
 
 } // namespace edgevdb

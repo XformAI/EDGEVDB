@@ -161,10 +161,8 @@ cmake --build .
 | CMake Option | Default | Description |
 |-------------|---------|-------------|
 | `EDGEVDB_BUILD_TESTS` | `ON` | Build test suite |
-| `EDGEVDB_BUILD_PYTHON` | `OFF` | Build Python extension |
 | `EDGEVDB_ENABLE_NEON` | `ON` | ARM NEON SIMD |
 | `EDGEVDB_ENABLE_SSE2` | `ON` | x86 SSE2 SIMD |
-| `EDGEVDB_ENABLE_SYNC` | `ON` | CRDT sync engine |
 
 ---
 
@@ -399,7 +397,7 @@ dependencies {
 ```kotlin
 // build.gradle.kts
 dependencies {
-    implementation("in.xformai:edgevdb-android:0.1.0")
+    implementation("in.xformai:edgevdb-android:0.2.0")
 }
 ```
 
@@ -471,7 +469,7 @@ db.close()
 ```swift
 // Package.swift or Xcode → File → Add Package Dependencies
 dependencies: [
-    .package(url: "https://github.com/XformAI/EDGEVDB.git", from: "0.1.0")
+    .package(url: "https://github.com/XformAI/EDGEVDB.git", from: "0.2.0")
 ]
 ```
 
@@ -602,20 +600,45 @@ Then modify `embedder.cpp` to call ORT APIs instead of `generateFallbackEmbeddin
 
 ## 9. Running Tests & Benchmarks
 
-### After any build, verify:
+### One command runs everything
 
 ```bash
-# C++ unit tests (from project root, after desktop-debug build)
-./build/desktop-debug/tests/test_hnsw           # HNSW index ops
-./build/desktop-debug/tests/test_hybrid_ranker   # Ranking algorithm
-./build/desktop-debug/tests/test_embedder        # Embedding pipeline
-./build/desktop-debug/tests/test_object_store    # Object CRUD
-./build/desktop-debug/tests/test_sync            # CRDT sync
-./build/desktop-debug/tests/test_e2e_rag         # Full RAG pipeline
+ctest --test-dir build/desktop-debug --output-on-failure   # all 14 suites
+```
+
+### Individual suites
+
+```bash
+# Core correctness
+./build/desktop-debug/tests/test_hnsw             # HNSW index ops + recall + save/load
+./build/desktop-debug/tests/test_hybrid_ranker    # Linear-blend ranking
+./build/desktop-debug/tests/test_embedder         # l2 normalization
+./build/desktop-debug/tests/test_object_store     # Object CRUD
+./build/desktop-debug/tests/test_sync             # Sync engine basics
+./build/desktop-debug/tests/test_e2e_rag          # Full RAG pipeline via C API
+
+# Added in 0.2.0
+./build/desktop-debug/tests/test_crc              # CRC-32 golden values
+./build/desktop-debug/tests/test_tokenizer        # UTF-8 + special-token ids
+./build/desktop-debug/tests/test_persistence      # Round-trip + corruption rejection
+./build/desktop-debug/tests/test_concurrency      # 8 readers + writer stress
+./build/desktop-debug/tests/test_sync_convergence # Replica convergence + tombstones
+./build/desktop-debug/tests/test_ab_recall        # A/B gates for the opt-in algorithms
+./build/desktop-debug/tests/test_bm25             # BM25 + retrieval modes + page-index option
+./build/desktop-debug/tests/test_onnx_semantic    # Real ONNX inference (skips w/o model+ORT)
+
+# To exercise real ONNX inference locally:
+#   pip install onnxruntime
+#   fetch sentence-transformers/all-MiniLM-L6-v2 onnx/model.onnx into models/
+#   export EDGEVDB_ORT_LIBRARY=<path to onnxruntime shared library>
+#   ./build/desktop-debug/tests/test_onnx_semantic
 
 # Benchmarks (release build only)
-./build/desktop-release/tests/bench_query        # Query latency at scale
-./build/desktop-release/tests/bench_build        # Index build throughput
+./build/desktop-release/tests/bench_query         # Query latency @10k
+./build/desktop-release/tests/bench_build         # Index build throughput
+./build/desktop-release/tests/bench_extended      # 15k build/query + recall
+./build/desktop-release/tests/bench_scale 50000   # Latency/recall/memory to 50k
+./build/desktop-release/tests/bench_scale 50000 ha 256  # 'h'euristic+'a'daptive modes, ef=256
 
 # Python SDK tests (uses unittest; pytest also works if installed)
 cp build/desktop-debug/core/libedgevdb_shared.so python/edgevdb/lib/linux/
@@ -650,7 +673,7 @@ pip install edgevdb
 
 1. Bump `version` in `python/pyproject.toml`
 2. Commit and push to `main`
-3. Create a GitHub release with a `v*` tag (e.g. `v0.1.0`)
+3. Create a GitHub release with a `v*` tag (e.g. `v0.2.0`)
 
 **pyproject.toml** is configured at `python/pyproject.toml`.
 
@@ -662,9 +685,9 @@ The Android SDK is **published on GitHub Packages**: [github.com/XformAI/EDGEVDB
 
 **To release a new version:**
 
-1. Bump `EDGEVDB_VERSION` (passed via `-P` flag in CI, defaults to `0.1.0`)
+1. Bump `EDGEVDB_VERSION` (passed via `-P` flag in CI, defaults to `0.2.0`)
 2. Commit and push to `main`
-3. Create a GitHub release with a `v*` tag (e.g. `v0.1.0`)
+3. Create a GitHub release with a `v*` tag (e.g. `v0.2.0`)
 
 **Users add to their project:**
 
@@ -682,7 +705,7 @@ repositories {
 
 // build.gradle.kts
 dependencies {
-    implementation("in.xformai:edgevdb-android:0.1.0")
+    implementation("in.xformai:edgevdb-android:0.2.0")
 }
 ```
 
@@ -698,7 +721,7 @@ include(FetchContent)
 FetchContent_Declare(
     edgevdb
     GIT_REPOSITORY https://github.com/edgevdb/edgevdb.git
-    GIT_TAG        v0.1.0
+    GIT_TAG        v0.2.0
 )
 FetchContent_MakeAvailable(edgevdb)
 target_link_libraries(my_app PRIVATE edgevdb_core)
@@ -725,7 +748,7 @@ from conan import ConanFile
 
 class EdgeVDBConan(ConanFile):
     name = "edgevdb"
-    version = "0.1.0"
+    version = "0.2.0"
     settings = "os", "compiler", "build_type", "arch"
     generators = "CMakeToolchain", "CMakeDeps"
     exports_sources = "CMakeLists.txt", "core/*", "CMakePresets.json"
@@ -776,14 +799,14 @@ let package = Package(
 # EdgeVDB.podspec
 Pod::Spec.new do |s|
   s.name         = "EdgeVDB"
-  s.version      = "0.1.0"
+  s.version      = "0.2.0"
   s.summary      = "On-device vector database SDK"
   s.homepage     = "https://github.com/edgevdb/edgevdb"
   s.license      = "Apache-2.0"
   s.author       = "EdgeVDB Team"
   s.ios.deployment_target = "15.0"
   s.osx.deployment_target = "12.0"
-  s.source       = { git: "https://github.com/XformAI/EDGEVDB.git", tag: "v0.1.0" }
+  s.source       = { git: "https://github.com/XformAI/EDGEVDB.git", tag: "v0.2.0" }
 
   # C++ core (source pod)
   s.subspec 'Core' do |core|
@@ -824,17 +847,21 @@ end
 | 5 | `EVDB_ERR_INVALID_ARG` | Invalid argument |
 | 6 | `EVDB_ERR_ONNX` | ONNX Runtime error |
 | 7 | `EVDB_ERR_SYNC` | Sync error |
+| 8 | `EVDB_ERR_BUFFER_TOO_SMALL` | Output buffer too small (query required size and retry) |
 
 ### C API Quick Reference
 
 ```
 Lifecycle:     evdb_default_config, evdb_open, evdb_close, evdb_save
-Embedding:     evdb_embedder_create, evdb_embedder_destroy, evdb_embed_text
+Embedding:     evdb_embedder_create, evdb_embedder_destroy, evdb_embed_text,
+               evdb_embedder_is_semantic (0 = hash fallback, 1 = real ONNX)
 Insert:        evdb_insert_text, evdb_insert_chunk, evdb_remove_chunk
-Query:         evdb_query_text, evdb_query_vector, evdb_query_free
+Query:         evdb_query_text, evdb_query_vector, evdb_query_lexical (BM25,
+               no embedder needed), evdb_query_free
 Results:       evdb_result_count, evdb_result_text, evdb_result_score,
                evdb_result_chunk_id, evdb_result_page, evdb_result_context_string
-Objects:       evdb_object_put, evdb_object_get, evdb_object_remove, evdb_object_query
+Objects:       evdb_object_put, evdb_object_get, evdb_object_get_size,
+               evdb_object_remove, evdb_object_query
 Relations:     evdb_relation_add, evdb_relation_get_targets
 Sync:          evdb_sync_create, evdb_sync_destroy, evdb_sync_export_delta,
                evdb_sync_apply_delta, evdb_sync_export_to_file, evdb_sync_import_from_file
@@ -854,7 +881,25 @@ Utilities:     evdb_version_string, evdb_error_string, evdb_set_log_level
 | `token_budget` | 3200 | Max tokens in RAG context |
 | `embedding_threads` | 2 | ONNX inference threads |
 | `enable_knowledge_graph` | 1 | Auto-extract entities |
-| `enable_sync` | 0 | CRDT sync engine |
+| `enable_sync` | 0 | Reserved; sync engine is created via `evdb_sync_create` |
+| `retrieval_mode` | 0 | 0 = hybrid (vector ∪ BM25), 1 = vector-only, 2 = BM25-only |
+| `enable_page_index` | 1 | 0 skips page indexing entirely (no page.bin, no page signal) |
+| `ranker_mode` | 0 | 0 = linear blend, 1 = RRF, 2 = knowledge-graph-boosted RRF |
+| `rrf_k` | 60.0 | RRF rank constant |
+| `hnsw_use_heuristic_selection` | 0 | Diversity-aware neighbour selection (HNSW Alg. 4) |
+| `hnsw_adaptive_ef` | 0 | Widen search beam only on hard queries |
+| `hnsw_quantized_search` | 0 | int8 traversal + exact float re-rank |
+| `enable_self_check` | 1 | Micro-benchmark enabled modes at open; auto-fallback on regression |
+
+All 0.2.0 additions are appended to `EvdbConfig` (ABI append-only) and default
+to the original behaviour. Any enabled `hnsw_*` mode that regresses recall in
+the open-time self-check is disabled for the session with a logged warning.
+
+**ONNX embedding at runtime:** the core loads ONNX Runtime dynamically — put
+the ORT shared library on the default search path or set `EDGEVDB_ORT_LIBRARY`,
+and pass a MiniLM ONNX model to `evdb_embedder_create`. Without ORT the
+embedder is a deterministic non-semantic hash fallback (test-only); check
+`evdb_embedder_is_semantic()`.
 
 ---
 

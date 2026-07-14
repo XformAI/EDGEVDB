@@ -10,6 +10,7 @@
 #include "kg_extractor.hpp"
 #include "object_store.hpp"
 #include "relation_index.hpp"
+#include "lexical_index.hpp"
 #include "token_budget.hpp"
 #include "embedder.hpp"
 #include "log.hpp"
@@ -21,16 +22,27 @@
 
 namespace edgevdb {
 
+// Retrieval strategy: which candidate sources feed the ranker.
+enum class RetrievalMode {
+    Hybrid = 0, // union of vector + BM25 candidates (default)
+    Vector = 1, // HNSW only (semantic)
+    Bm25 = 2,   // lexical only — no embedding required
+};
+
 struct CombinedQuery {
     std::string text_query;
     std::string filter_type_name;
     std::string filter_property;
     std::string filter_value;
+    // Relation type linking filter objects to chunks (configurable; the
+    // previous implementation hard-coded "sourceDocument").
+    std::string filter_relation = "sourceDocument";
     bool has_filter = false;
     int top_k = 5;
     bool use_kg_expansion = false;
     int token_budget = 3200;
     float token_estimate_ratio = 3.5f;
+    RetrievalMode retrieval_mode = RetrievalMode::Hybrid;
 };
 
 struct CombinedResult {
@@ -48,6 +60,9 @@ public:
                 KGExpander* kg_expander, ObjectStore* obj_store,
                 RelationIndex* rel_index);
 
+    void setLexicalIndex(LexicalIndex* lexical) { lexical_index_ = lexical; }
+
+    // query_embedding may be null only in Bm25 retrieval mode.
     CombinedResult query(const CombinedQuery& q, const float* query_embedding) const;
 
     std::string assembleContext(const std::vector<QueryResult>& results,
@@ -64,6 +79,7 @@ private:
     KGExpander* kg_expander_;
     ObjectStore* obj_store_;
     RelationIndex* rel_index_;
+    LexicalIndex* lexical_index_ = nullptr;
 };
 
 } // namespace edgevdb

@@ -13,11 +13,28 @@ tests/
 ├── test_hybrid_ranker.cpp      # Hybrid ranking algorithm tests
 ├── test_embedder.cpp           # Embedding pipeline tests
 ├── test_object_store.cpp       # Object store CRUD tests
-├── test_sync.cpp               # CRDT sync engine tests
-├── test_e2e_rag.cpp            # End-to-end RAG pipeline tests
+├── test_sync.cpp               # Sync engine basics
+├── test_e2e_rag.cpp            # End-to-end RAG pipeline tests (C API)
+├── test_crc.cpp                # CRC-32 golden values + corruption detection
+├── test_tokenizer.cpp          # UTF-8 normalization + special-token ids
+├── test_persistence.cpp        # Save/reopen round-trips + corruption rejection
+├── test_concurrency.cpp        # 8 readers + writer stress (race regression)
+├── test_sync_convergence.cpp   # Replica convergence, tombstones, idempotence
+├── test_ab_recall.cpp          # A/B recall gates for the opt-in algorithms
+├── test_bm25.cpp               # BM25 index, retrieval modes, page-index option
+├── test_onnx_semantic.cpp      # Real ONNX inference (skips without model+ORT)
 └── benchmarks/
     ├── bench_query_latency.cpp  # Query latency benchmarks
-    └── bench_build_time.cpp     # Index build throughput benchmarks
+    ├── bench_build_time.cpp     # Index build throughput benchmarks
+    ├── bench_extended.cpp       # 15k build/query + recall
+    └── bench_scale.cpp          # Latency/recall/memory scaling to 50k+
+                                 #   usage: bench_scale [N] [modes: h|a|q] [ef]
+```
+
+Run everything with one command after a debug build:
+
+```bash
+ctest --test-dir build/desktop-debug --output-on-failure
 ```
 
 ## Running Tests

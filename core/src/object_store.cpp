@@ -1,4 +1,6 @@
 #include "object_store.hpp"
+#include "crc32.hpp"
+#include "persist.hpp"
 #include <fstream>
 #include <algorithm>
 #include <mutex>
@@ -31,21 +33,44 @@ bool ObjectStore::open() {
 
     uint32_t version;
     file.read(reinterpret_cast<char*>(&version), 4);
+    if (version != 2) {
+        EVDB_LOG_ERROR("ObjectStore: Unsupported version %u (expected 2) — rebuild the store", version);
+        return false;
+    }
+
+    const uint64_t total_size = persist::fileSize(file);
+    constexpr uint64_t HEADER_SIZE = 8 + 4 + 8;
 
     uint64_t count;
     file.read(reinterpret_cast<char*>(&count), 8);
+    if (total_size < HEADER_SIZE + 4 ||
+        !persist::boundedCount(count, sizeof(ObjectRecord), total_size - HEADER_SIZE - 4)) {
+        EVDB_LOG_ERROR("ObjectStore: Corrupt count %llu", (unsigned long long)count);
+        return false;
+    }
 
     records_.clear();
     uint64_t max_id = 0;
+    uint32_t crc_state = CRC32_INIT;
     for (uint64_t i = 0; i < count; i++) {
         ObjectRecord record;
         file.read(reinterpret_cast<char*>(&record), sizeof(ObjectRecord));
         if (!file.good()) {
             EVDB_LOG_ERROR("ObjectStore: Read error at record %llu", (unsigned long long)i);
+            records_.clear();
             return false;
         }
+        crc_state = crc32Update(crc_state, &record, sizeof(ObjectRecord));
         records_[record.id] = record;
         if (record.id >= max_id) max_id = record.id;
+    }
+
+    uint32_t stored_crc;
+    file.read(reinterpret_cast<char*>(&stored_crc), 4);
+    if (!file.good() || crc32Finalize(crc_state) != stored_crc) {
+        EVDB_LOG_ERROR("ObjectStore: CRC32 mismatch — refusing corrupt data");
+        records_.clear();
+        return false;
     }
 
     next_id_ = max_id + 1;
@@ -60,30 +85,29 @@ bool ObjectStore::save() {
 
     if (file_path_.empty()) return false;
 
-    std::ofstream file(file_path_, std::ios::binary | std::ios::trunc);
-    if (!file.is_open()) return false;
+    bool ok = persist::atomicSave(file_path_, [this](std::ofstream& file) {
+        const char magic[8] = {'E','V','D','B','O','B','J','\0'};
+        file.write(magic, 8);
 
-    const char magic[8] = {'E','V','D','B','O','B','J','\0'};
-    file.write(magic, 8);
+        uint32_t version = 2;
+        file.write(reinterpret_cast<const char*>(&version), 4);
 
-    uint32_t version = 1;
-    file.write(reinterpret_cast<const char*>(&version), 4);
+        uint64_t count = records_.size();
+        file.write(reinterpret_cast<const char*>(&count), 8);
 
-    uint64_t count = records_.size();
-    file.write(reinterpret_cast<const char*>(&count), 8);
+        uint32_t crc_state = CRC32_INIT;
+        for (const auto& [id, record] : records_) {
+            file.write(reinterpret_cast<const char*>(&record), sizeof(ObjectRecord));
+            crc_state = crc32Update(crc_state, &record, sizeof(ObjectRecord));
+        }
 
-    std::vector<uint8_t> crc_data;
-    for (const auto& [id, record] : records_) {
-        file.write(reinterpret_cast<const char*>(&record), sizeof(ObjectRecord));
-        const uint8_t* p = reinterpret_cast<const uint8_t*>(&record);
-        crc_data.insert(crc_data.end(), p, p + sizeof(ObjectRecord));
-    }
+        uint32_t crc = crc32Finalize(crc_state);
+        file.write(reinterpret_cast<const char*>(&crc), 4);
+        return file.good();
+    });
 
-    uint32_t crc = computeCRC32(crc_data.data(), crc_data.size());
-    file.write(reinterpret_cast<const char*>(&crc), 4);
-
-    EVDB_LOG_INFO("ObjectStore: Saved %zu records", records_.size());
-    return file.good();
+    if (ok) EVDB_LOG_INFO("ObjectStore: Saved %zu records", records_.size());
+    return ok;
 }
 
 uint64_t ObjectStore::put(const std::string& type_name, const nlohmann::json& properties) {
@@ -189,6 +213,7 @@ std::vector<nlohmann::json> ObjectStore::query(const std::string& type_name,
             try {
                 obj = nlohmann::json::parse(json_str);
                 obj["id"] = id;
+                obj["_type"] = std::string(rec_it->second.type_name);
                 results.push_back(obj);
             } catch (...) {}
         }
@@ -217,6 +242,7 @@ std::vector<nlohmann::json> ObjectStore::getAll(const std::string& type_name,
         try {
             obj = nlohmann::json::parse(json_str);
             obj["id"] = id;
+            obj["_type"] = std::string(rec_it->second.type_name);
             results.push_back(obj);
         } catch (...) {}
     }
@@ -335,17 +361,6 @@ void ObjectStore::removeFromIndices(uint64_t id, const std::string& type_name) {
             }
         }
     }
-}
-
-uint32_t ObjectStore::computeCRC32(const uint8_t* data, size_t len) const {
-    uint32_t crc = 0xFFFFFFFF;
-    for (size_t i = 0; i < len; i++) {
-        crc ^= data[i];
-        for (int j = 0; j < 8; j++) {
-            crc = (crc >> 1) ^ (0xEDB88320 & (-(crc & 1)));
-        }
-    }
-    return crc ^ 0xFFFFFFFF;
 }
 
 } // namespace edgevdb

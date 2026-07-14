@@ -34,38 +34,78 @@ bool WordPieceTokenizer::loadVocab(const std::string& vocab_path) {
     }
 
     vocab_loaded_ = !vocab_.empty();
+
+    // Resolve special-token ids from the vocab itself instead of trusting
+    // the standard BERT positions; a shifted or custom vocab would
+    // otherwise frame every sequence with the wrong ids.
+    auto lookup = [this](const char* tok, int fallback) {
+        auto it = vocab_.find(tok);
+        return it != vocab_.end() ? it->second : fallback;
+    };
+    cls_id_ = lookup("[CLS]", CLS_ID);
+    sep_id_ = lookup("[SEP]", SEP_ID);
+    pad_id_ = lookup("[PAD]", PAD_ID);
+    unk_id_ = lookup("[UNK]", UNK_ID);
+
     EVDB_LOG_INFO("Tokenizer: Loaded %zu vocab entries", vocab_.size());
     return vocab_loaded_;
 }
 
 std::string WordPieceTokenizer::normalizeText(const std::string& text) const {
+    // UTF-8-aware normalization: lowercase ASCII, fold Latin-1 accented
+    // letters (decoded as codepoints, not raw bytes) to their base letter,
+    // and pass every other codepoint through unchanged so non-Latin scripts
+    // survive intact (unknown words become [UNK] later, not empty).
     std::string result;
     result.reserve(text.size());
-    for (unsigned char c : text) {
-        // Convert to lowercase
-        if (c >= 'A' && c <= 'Z') {
-            result += static_cast<char>(c + 32);
-        }
-        // Basic ASCII accent stripping (common accented chars)
-        else if (c == 0xC0 || c == 0xC1 || c == 0xC2 || c == 0xC3 || c == 0xC4 || c == 0xC5 ||
-                 c == 0xE0 || c == 0xE1 || c == 0xE2 || c == 0xE3 || c == 0xE4 || c == 0xE5) {
-            result += 'a';
-        } else if (c == 0xC8 || c == 0xC9 || c == 0xCA || c == 0xCB ||
-                   c == 0xE8 || c == 0xE9 || c == 0xEA || c == 0xEB) {
-            result += 'e';
-        } else if (c == 0xCC || c == 0xCD || c == 0xCE || c == 0xCF ||
-                   c == 0xEC || c == 0xED || c == 0xEE || c == 0xEF) {
-            result += 'i';
-        } else if (c == 0xD2 || c == 0xD3 || c == 0xD4 || c == 0xD5 || c == 0xD6 ||
-                   c == 0xF2 || c == 0xF3 || c == 0xF4 || c == 0xF5 || c == 0xF6) {
-            result += 'o';
-        } else if (c == 0xD9 || c == 0xDA || c == 0xDB || c == 0xDC ||
-                   c == 0xF9 || c == 0xFA || c == 0xFB || c == 0xFC) {
-            result += 'u';
-        } else if (c < 0x80) {
+
+    size_t i = 0;
+    const size_t n = text.size();
+    while (i < n) {
+        unsigned char c = static_cast<unsigned char>(text[i]);
+
+        if (c < 0x80) {
+            // ASCII fast path
+            if (c >= 'A' && c <= 'Z') c = static_cast<unsigned char>(c + 32);
             result += static_cast<char>(c);
+            i++;
+            continue;
         }
-        // Skip combining characters / non-ASCII for simplicity
+
+        // Decode one UTF-8 codepoint (with validation).
+        uint32_t cp = 0;
+        size_t len = 0;
+        if ((c & 0xE0) == 0xC0)      { cp = c & 0x1F; len = 2; }
+        else if ((c & 0xF0) == 0xE0) { cp = c & 0x0F; len = 3; }
+        else if ((c & 0xF8) == 0xF0) { cp = c & 0x07; len = 4; }
+        else { i++; continue; } // stray continuation/invalid byte: drop it
+
+        if (i + len > n) break; // truncated sequence at end of string
+        bool valid = true;
+        for (size_t k = 1; k < len; k++) {
+            unsigned char cc = static_cast<unsigned char>(text[i + k]);
+            if ((cc & 0xC0) != 0x80) { valid = false; break; }
+            cp = (cp << 6) | (cc & 0x3F);
+        }
+        if (!valid) { i++; continue; }
+
+        // Latin-1 supplement accent folding on the decoded codepoint.
+        char folded = 0;
+        if ((cp >= 0x00C0 && cp <= 0x00C5) || (cp >= 0x00E0 && cp <= 0x00E5)) folded = 'a';
+        else if ((cp >= 0x00C8 && cp <= 0x00CB) || (cp >= 0x00E8 && cp <= 0x00EB)) folded = 'e';
+        else if ((cp >= 0x00CC && cp <= 0x00CF) || (cp >= 0x00EC && cp <= 0x00EF)) folded = 'i';
+        else if ((cp >= 0x00D2 && cp <= 0x00D6) || (cp >= 0x00F2 && cp <= 0x00F6)) folded = 'o';
+        else if ((cp >= 0x00D9 && cp <= 0x00DC) || (cp >= 0x00F9 && cp <= 0x00FC)) folded = 'u';
+        else if (cp == 0x00C7 || cp == 0x00E7) folded = 'c';
+        else if (cp == 0x00D1 || cp == 0x00F1) folded = 'n';
+
+        if (folded) {
+            result += folded;
+        } else {
+            // Preserve the original (valid) multi-byte sequence untouched.
+            result.append(text, i, len);
+        }
+        i += len;
     }
     return result;
 }
@@ -144,7 +184,7 @@ std::vector<int> WordPieceTokenizer::wordPieceTokenize(const std::string& word) 
         if (!found) {
             // Unknown token
             ids.clear();
-            ids.push_back(UNK_ID);
+            ids.push_back(unk_id_);
             return ids;
         }
 
@@ -156,7 +196,7 @@ std::vector<int> WordPieceTokenizer::wordPieceTokenize(const std::string& word) 
 
 TokenizerOutput WordPieceTokenizer::encode(const std::string& text, int max_length) const {
     TokenizerOutput output;
-    output.input_ids.resize(max_length, PAD_ID);
+    output.input_ids.resize(max_length, pad_id_);
     output.attention_mask.resize(max_length, 0);
     output.token_type_ids.resize(max_length, 0);
 
@@ -177,7 +217,7 @@ TokenizerOutput WordPieceTokenizer::encode(const std::string& text, int max_leng
     }
 
     // Build final sequence: [CLS] + tokens + [SEP] + [PAD...]
-    output.input_ids[0] = CLS_ID;
+    output.input_ids[0] = cls_id_;
     output.attention_mask[0] = 1;
 
     for (size_t i = 0; i < all_ids.size(); i++) {
@@ -186,7 +226,7 @@ TokenizerOutput WordPieceTokenizer::encode(const std::string& text, int max_leng
     }
 
     int sep_pos = static_cast<int>(all_ids.size()) + 1;
-    output.input_ids[sep_pos] = SEP_ID;
+    output.input_ids[sep_pos] = sep_id_;
     output.attention_mask[sep_pos] = 1;
 
     output.actual_length = sep_pos + 1; // CLS + tokens + SEP

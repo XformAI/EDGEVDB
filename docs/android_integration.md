@@ -29,7 +29,7 @@ repositories {
 
 // build.gradle.kts
 dependencies {
-    implementation("in.xformai:edgevdb-android:0.1.0")
+    implementation("in.xformai:edgevdb-android:0.2.0")
 }
 ```
 

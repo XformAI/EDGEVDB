@@ -8,7 +8,7 @@ import os
 import platform
 import json
 from pathlib import Path
-from typing import List, Dict, Any, Optional, Tuple
+from typing import List, Dict, Any, Optional
 
 # Library loading
 def _find_library() -> str:
@@ -118,6 +118,10 @@ class _Lib:
         ]
         lib.evdb_query_vector.restype = ctypes.c_void_p
 
+        # evdb_query_lexical (BM25 — no embedder required)
+        lib.evdb_query_lexical.argtypes = [ctypes.c_void_p, ctypes.c_char_p, ctypes.c_int]
+        lib.evdb_query_lexical.restype = ctypes.c_void_p
+
         # evdb_result_count / text / score / chunk_id / page / context
         lib.evdb_result_count.argtypes = [ctypes.c_void_p]
         lib.evdb_result_count.restype = ctypes.c_int
@@ -152,6 +156,38 @@ class _Lib:
         ]
         lib.evdb_object_get.restype = ctypes.c_int
 
+        lib.evdb_object_get_size.argtypes = [ctypes.c_void_p, ctypes.c_uint64]
+        lib.evdb_object_get_size.restype = ctypes.c_int
+
+        lib.evdb_object_query.argtypes = [
+            ctypes.c_void_p, ctypes.c_char_p, ctypes.c_char_p, ctypes.c_char_p,
+            ctypes.c_char_p, ctypes.c_int, ctypes.c_int
+        ]
+        lib.evdb_object_query.restype = ctypes.c_int
+
+        lib.evdb_embedder_is_semantic.argtypes = [ctypes.c_void_p]
+        lib.evdb_embedder_is_semantic.restype = ctypes.c_int
+
+        lib.evdb_relation_get_targets.argtypes = [
+            ctypes.c_void_p, ctypes.c_char_p, ctypes.c_uint64,
+            ctypes.POINTER(ctypes.c_uint64), ctypes.POINTER(ctypes.c_int)
+        ]
+        lib.evdb_relation_get_targets.restype = ctypes.c_int
+
+        # Sync
+        lib.evdb_sync_create.argtypes = [ctypes.c_void_p, ctypes.c_char_p]
+        lib.evdb_sync_create.restype = ctypes.c_void_p
+        lib.evdb_sync_destroy.argtypes = [ctypes.c_void_p]
+        lib.evdb_sync_destroy.restype = None
+        lib.evdb_sync_export_to_file.argtypes = [
+            ctypes.c_void_p, ctypes.c_char_p, ctypes.c_uint64
+        ]
+        lib.evdb_sync_export_to_file.restype = ctypes.c_int
+        lib.evdb_sync_import_from_file.argtypes = [ctypes.c_void_p, ctypes.c_char_p]
+        lib.evdb_sync_import_from_file.restype = ctypes.c_int
+        lib.evdb_sync_current_clock.argtypes = [ctypes.c_void_p]
+        lib.evdb_sync_current_clock.restype = ctypes.c_uint64
+
         lib.evdb_object_remove.argtypes = [ctypes.c_void_p, ctypes.c_uint64]
         lib.evdb_object_remove.restype = ctypes.c_int
 
@@ -184,6 +220,19 @@ class EvdbConfig(ctypes.Structure):
         ("enable_knowledge_graph", ctypes.c_int),
         ("enable_sync", ctypes.c_int),
         ("device_id", ctypes.c_char_p),
+        # Optional algorithm modes (appended in 0.2.0; must match vectordb.h
+        # exactly — the C side copies the whole struct).
+        ("hnsw_use_heuristic_selection", ctypes.c_int),
+        ("hnsw_adaptive_ef", ctypes.c_int),
+        ("hnsw_quantized_search", ctypes.c_int),
+        ("ranker_mode", ctypes.c_int),
+        ("rrf_k", ctypes.c_float),
+        ("enable_self_check", ctypes.c_int),
+        # 0=hybrid (vector + BM25 union), 1=vector-only, 2=BM25-only
+        ("retrieval_mode", ctypes.c_int),
+        # 1 (default) = maintain page index and use page proximity in ranking;
+        # 0 = skip it entirely (no page.bin)
+        ("enable_page_index", ctypes.c_int),
     ]
 
 
@@ -256,6 +305,16 @@ class Embedder:
     def handle(self):
         return self._handle
 
+    @property
+    def is_semantic(self) -> bool:
+        """True only when real ONNX inference is active.
+
+        False means the deterministic hash fallback is in use: stable and
+        fine for tests, but NOT semantic — don't use it for production
+        similarity search.
+        """
+        return bool(self._lib.evdb_embedder_is_semantic(self._handle))
+
     def embed(self, text: str) -> List[float]:
         out = (ctypes.c_float * 384)()
         err = self._lib.evdb_embed_text(self._handle, text.encode(), out)
@@ -292,7 +351,8 @@ class EdgeVDB:
             raise RuntimeError(f"Failed to open EdgeVDB at {storage_dir}")
 
     def close(self):
-        if self._handle:
+        # getattr: __init__ may have failed before _handle was assigned.
+        if getattr(self, "_handle", None):
             self._lib.evdb_close(self._handle)
             self._handle = None
 
@@ -347,6 +407,13 @@ class EdgeVDB:
             raise RuntimeError("Query failed")
         return QueryResults(qh)
 
+    def query_bm25(self, query: str, top_k: int = 5) -> QueryResults:
+        """Pure lexical BM25 retrieval — needs no embedding model at all."""
+        qh = self._lib.evdb_query_lexical(self._handle, query.encode(), top_k)
+        if not qh:
+            raise RuntimeError("BM25 query failed")
+        return QueryResults(qh)
+
     # Object store
     def put_object(self, type_name: str, properties: Dict[str, Any]) -> int:
         json_str = json.dumps(properties)
@@ -359,13 +426,33 @@ class EdgeVDB:
         return out_id.value
 
     def get_object(self, object_id: int) -> Optional[Dict[str, Any]]:
-        buf = ctypes.create_string_buffer(4096)
-        err = self._lib.evdb_object_get(self._handle, object_id, buf, 4096)
+        size = self._lib.evdb_object_get_size(self._handle, object_id)
+        if size <= 0:
+            return None
+        buf = ctypes.create_string_buffer(size)
+        err = self._lib.evdb_object_get(self._handle, object_id, buf, size)
         if err == 4:  # NOT_FOUND
             return None
         if err != 0:
             raise RuntimeError(f"Object get failed: {err}")
         return json.loads(buf.value.decode())
+
+    def query_objects(self, type_name: str, filter_property: str = None,
+                      filter_value: str = None, limit: int = 100) -> List[Dict[str, Any]]:
+        buf_size = 1 << 16
+        while True:
+            buf = ctypes.create_string_buffer(buf_size)
+            err = self._lib.evdb_object_query(
+                self._handle, type_name.encode(),
+                filter_property.encode() if filter_property else None,
+                filter_value.encode() if filter_value else None,
+                buf, buf_size, limit)
+            if err == 8:  # BUFFER_TOO_SMALL: retry doubled
+                buf_size *= 2
+                continue
+            if err != 0:
+                raise RuntimeError(f"Object query failed: {err}")
+            return json.loads(buf.value.decode() or "[]")
 
     def remove_object(self, object_id: int):
         err = self._lib.evdb_object_remove(self._handle, object_id)
