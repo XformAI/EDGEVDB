@@ -23,6 +23,37 @@ namespace selfcheck {
 
 constexpr float FALLBACK_TOLERANCE = 0.01f; // allowed recall drop vs baseline
 
+// Platform-deterministic Gaussian sampler. std::normal_distribution's
+// algorithm is implementation-defined (libstdc++, libc++ and MSVC differ),
+// so the same seed produced different datasets per platform and CI recall
+// gates disagreed with local runs. Box-Muller over mt19937 uniforms yields
+// the identical sequence everywhere.
+class DetGauss {
+public:
+    explicit DetGauss(unsigned seed) : rng_(seed) {}
+    float operator()() {
+        if (has_spare_) {
+            has_spare_ = false;
+            return spare_;
+        }
+        float u1, u2;
+        do {
+            u1 = static_cast<float>(rng_()) / static_cast<float>(std::mt19937::max());
+        } while (u1 <= 1e-7f);
+        u2 = static_cast<float>(rng_()) / static_cast<float>(std::mt19937::max());
+        float mag = std::sqrt(-2.0f * std::log(u1));
+        float ang = 6.28318530718f * u2;
+        spare_ = mag * std::sin(ang);
+        has_spare_ = true;
+        return mag * std::cos(ang);
+    }
+
+private:
+    std::mt19937 rng_;
+    float spare_ = 0.0f;
+    bool has_spare_ = false;
+};
+
 struct Dataset {
     std::vector<std::vector<float>> points;
     std::vector<std::vector<float>> queries;
@@ -31,8 +62,7 @@ struct Dataset {
 inline Dataset makeClusteredDataset(int clusters = 15, int per_cluster = 20,
                                     int num_queries = 20, unsigned seed = 42) {
     Dataset ds;
-    std::mt19937 rng(seed);
-    std::normal_distribution<float> gauss(0.0f, 1.0f);
+    DetGauss gauss(seed);
 
     auto normalize = [](std::vector<float>& v) {
         float norm = 0.0f;
@@ -44,7 +74,7 @@ inline Dataset makeClusteredDataset(int clusters = 15, int per_cluster = 20,
     std::vector<std::vector<float>> centers(clusters);
     for (auto& c : centers) {
         c.resize(EMBEDDING_DIM);
-        for (auto& x : c) x = gauss(rng);
+        for (auto& x : c) x = gauss();
         normalize(c);
     }
 
@@ -52,7 +82,7 @@ inline Dataset makeClusteredDataset(int clusters = 15, int per_cluster = 20,
         for (int p = 0; p < per_cluster; p++) {
             std::vector<float> v(EMBEDDING_DIM);
             for (size_t d = 0; d < EMBEDDING_DIM; d++) {
-                v[d] = centers[ci][d] + 0.3f * gauss(rng);
+                v[d] = centers[ci][d] + 0.3f * gauss();
             }
             normalize(v);
             ds.points.push_back(std::move(v));
@@ -63,7 +93,7 @@ inline Dataset makeClusteredDataset(int clusters = 15, int per_cluster = 20,
         int ci = q % clusters;
         std::vector<float> v(EMBEDDING_DIM);
         for (size_t d = 0; d < EMBEDDING_DIM; d++) {
-            v[d] = centers[ci][d] + 0.3f * gauss(rng);
+            v[d] = centers[ci][d] + 0.3f * gauss();
         }
         normalize(v);
         ds.queries.push_back(std::move(v));
@@ -84,9 +114,12 @@ inline std::vector<uint64_t> bruteForceTopK(const Dataset& ds, const std::vector
     return ids;
 }
 
-// Recall@5 of an index configuration over the dataset.
+// Recall@5 of an index configuration over the dataset. The level RNG is
+// seeded so the comparison between configurations is graph-for-graph
+// deterministic (same layer assignments) on every platform and run.
 inline float measureRecall(const Dataset& ds, bool heuristic, bool adaptive, bool quantized) {
     HNSWIndex index(16, 100, 32);
+    index.seedLevelRng(0xEDB1u);
     index.setHeuristicSelection(heuristic);
     for (size_t i = 0; i < ds.points.size(); i++) {
         index.insert(static_cast<uint64_t>(i + 1), ds.points[i].data());
